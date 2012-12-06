@@ -16,11 +16,14 @@ namespace WorldGen
 		private SpriteBatch spriteBatch;
 		private SpriteFont sFont;
 
-		private const int pointCount = 500;
-		private VoronoiCore vc;
-		private Boundary bounds;
-		private TimeSpan computeTime;
 		private KeyboardState lastState;
+		private TimeSpan computeTime;
+
+		private const int pointCount = 500;
+		private Boundary bounds;
+		private VoronoiCore vc;
+
+		private WorldDrawableGameComponent wdgc;
 
 		public VoronoiDrawableGameComponent(Game game)
 			: base(game)
@@ -35,6 +38,8 @@ namespace WorldGen
 		public override void Initialize()
 		{
 			// TODO: Add your initialization code here
+			wdgc = new WorldDrawableGameComponent(Game);
+			Game.Components.Add(wdgc);
 
 			base.Initialize();
 		}
@@ -123,6 +128,13 @@ namespace WorldGen
 				vc.compute(points, bounds);
 				sw.Stop();
 				computeTime = sw.Elapsed;
+
+				wdgc.clear();
+			}
+
+			if (Keyboard.GetState().IsKeyDown(Keys.F1) && lastState.IsKeyUp(Keys.F1))
+			{
+				wdgc.generate(vc);
 			}
 
 			lastState = Keyboard.GetState();
@@ -177,7 +189,7 @@ namespace WorldGen
 						break;
 				}
 
-				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Site.Vertex.ToVector2(), size);
+				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Vertex.ToVector2(), size);
 			}
 
 			HelperFunctions.PrimitivesBatch.DrawRectangle(spriteBatch, Color.Red,

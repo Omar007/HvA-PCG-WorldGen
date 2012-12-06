@@ -14,16 +14,35 @@ namespace WorldGen.Voronoi
 	public class Cell
 	{
 		#region Fields
-		private Site site;
+		private int voronoiID;
+
+		private Vertex vertex;
+
 		private List<HalfEdge> halfEdges;
 
 		private CellType cellType;
 		#endregion
 
 		#region Properties
-		public Site Site
+		public int VoronoiID
 		{
-			get { return site; }
+			get { return voronoiID; }
+			set { voronoiID = value; }
+		}
+
+		public double X
+		{
+			get { return vertex.X; }
+		}
+
+		public double Y
+		{
+			get { return vertex.Y; }
+		}
+
+		public Vertex Vertex
+		{
+			get { return vertex; }
 		}
 
 		public List<HalfEdge> HalfEdges
@@ -38,9 +57,14 @@ namespace WorldGen.Voronoi
 		}
 		#endregion
 
-		public Cell(Site site)
+		public Cell(double x, double y)
+			: this(new Vertex(x, y))
 		{
-			this.site = site;
+		}
+
+		public Cell(Vertex v)
+		{
+			this.vertex = v;
 
 			halfEdges = new List<HalfEdge>();
 

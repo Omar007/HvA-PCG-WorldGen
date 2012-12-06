@@ -4,36 +4,36 @@ namespace WorldGen.Voronoi
 	public class DelaunyEdge
 	{
 		#region Fields
-		private Site lSite;
-		private Site rSite;
+		private Cell leftCell;
+		private Cell rightCell;
 		#endregion
 
 		#region Properties
-		public Site LeftSite
+		public Cell LeftCell
 		{
-			get { return lSite; }
+			get { return leftCell; }
 		}
 
-		public Site RightSite
+		public Cell RightCell
 		{
-			get { return rSite; }
+			get { return rightCell; }
 		}
 
 		public Vertex VertexA
 		{
-			get { return lSite.Vertex; }
+			get { return leftCell.Vertex; }
 		}
 
 		public Vertex VertexB
 		{
-			get { return rSite.Vertex; }
+			get { return rightCell.Vertex; }
 		}
 		#endregion
 
-		public DelaunyEdge(Site lSite, Site rSite)
+		public DelaunyEdge(Cell leftCell, Cell rightCell)
 		{
-			this.lSite = lSite;
-			this.rSite = rSite;
+			this.leftCell = leftCell;
+			this.rightCell = rightCell;
 		}
 	}
 }

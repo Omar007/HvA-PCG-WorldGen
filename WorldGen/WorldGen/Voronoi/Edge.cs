@@ -5,24 +5,24 @@ namespace WorldGen.Voronoi
 	public class Edge
 	{
 		#region Fields
-		private Site lSite;
-		private Site rSite;
+		private Cell leftCell;
+		private Cell rightCell;
 
 		private Vertex va;
 		private Vertex vb;
 		#endregion
 
 		#region Properties
-		public Site LeftSite
+		public Cell LeftCell
 		{
-			get { return lSite; }
-			set { lSite = value; }
+			get { return leftCell; }
+			set { leftCell = value; }
 		}
 
-		public Site RightSite
+		public Cell RightCell
 		{
-			get { return rSite; }
-			set { rSite = value; }
+			get { return rightCell; }
+			set { rightCell = value; }
 		}
 
 		public Vertex VertexA
@@ -38,10 +38,10 @@ namespace WorldGen.Voronoi
 		}
 		#endregion
 
-		public Edge(Site lSite, Site rSite)
+		public Edge(Cell leftCell, Cell rightCell)
 		{
-			this.lSite = lSite;
-			this.rSite = rSite;
+			this.leftCell = leftCell;
+			this.rightCell = rightCell;
 
 			va = null;
 			vb = null;
@@ -49,12 +49,12 @@ namespace WorldGen.Voronoi
 
 		public bool HasDelaunyEdge
 		{
-			get { return lSite != null && rSite != null;}
+			get { return leftCell != null && rightCell != null;}
 		}
 
 		public DelaunyEdge DelaunyEdge
 		{
-			get { return new DelaunyEdge(lSite, rSite); }
+			get { return new DelaunyEdge(leftCell, rightCell); }
 		}
 	}
 }

@@ -4,16 +4,16 @@ namespace WorldGen.Voronoi
 	public class BeachSection : RBNode
 	{
 		#region Fields
-		private Site site;
+		private Cell cell;
 		private Edge edge;
 		private CircleEvent circleEvent;
 		#endregion
 
 		#region Properties
-		public Site Site
+		public Cell Cell
 		{
-			get { return site; }
-			set { site = value; }
+			get { return cell; }
+			set { cell = value; }
 		}
 
 		public Edge Edge

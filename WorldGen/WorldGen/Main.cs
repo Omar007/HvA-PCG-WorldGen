@@ -31,6 +31,9 @@ namespace WorldGen
 		protected override void Initialize()
 		{
 			// TODO: Add your initialization logic here
+
+			HelperFunctions.PrimitivesBatch.Init(GraphicsDevice);
+
 			Components.Add(new VoronoiDrawableGameComponent(this));
 
 			base.Initialize();

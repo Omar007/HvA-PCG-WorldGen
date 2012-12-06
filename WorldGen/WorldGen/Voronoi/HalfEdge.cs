@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
 
 namespace WorldGen.Voronoi
 {
@@ -7,7 +6,7 @@ namespace WorldGen.Voronoi
 	{
 		#region Fields
 		private Edge edge;
-		private Site site;
+		private Cell cell;
 
 		private double angle;
 		#endregion
@@ -18,38 +17,33 @@ namespace WorldGen.Voronoi
 			get { return edge; }
 		}
 
-		public Site Site
-		{
-			get { return site; }
-		}
-
 		public Vertex StartPoint
 		{
-			get { return edge.LeftSite == site ? edge.VertexA : edge.VertexB; }
+			get { return edge.LeftCell == cell ? edge.VertexA : edge.VertexB; }
 		}
 
 		public Vertex EndPoint
 		{
-			get { return edge.LeftSite == site ? edge.VertexB : edge.VertexA; }
+			get { return edge.LeftCell == cell ? edge.VertexB : edge.VertexA; }
 		}
 		#endregion
 
-		public HalfEdge(Edge edge, Site lSite, Site rSite)
+		public HalfEdge(Edge edge, Cell leftCell, Cell rightCell)
 		{
 			this.edge = edge;
 
-			this.site = lSite;
+			this.cell = leftCell;
 
-			if (rSite != null)
+			if (rightCell != null)
 			{
-				this.angle = Math.Atan2(rSite.Y - lSite.Y, rSite.X - lSite.X);
+				this.angle = Math.Atan2(rightCell.Y - leftCell.Y, rightCell.X - leftCell.X);
 			}
 			else
 			{
 				Vertex va = edge.VertexA;
 				Vertex vb = edge.VertexB;
 
-				this.angle = edge.LeftSite == lSite ? Math.Atan2(vb.X - va.X, va.Y - vb.Y) : Math.Atan2(va.X - vb.X, vb.Y - va.Y);
+				this.angle = edge.LeftCell == leftCell ? Math.Atan2(vb.X - va.X, va.Y - vb.Y) : Math.Atan2(va.X - vb.X, vb.Y - va.Y);
 			}
 		}
 

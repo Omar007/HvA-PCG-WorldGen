@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace WorldGen.Voronoi
 {
@@ -127,31 +126,31 @@ namespace WorldGen.Voronoi
 			cells.Clear();
 		}
 
-		private Edge createEdge(Site lSite, Site rSite, Vertex va, Vertex vb)
+		private Edge createEdge(Cell leftCell, Cell rightCell, Vertex va, Vertex vb)
 		{
-			Edge edge = new Edge(lSite, rSite);
+			Edge edge = new Edge(leftCell, rightCell);
 
 			edges.Add(edge);
 
 			if (va != null)
 			{
-				setEdgeStartPoint(edge, lSite, rSite, va);
+				setEdgeStartPoint(edge, leftCell, rightCell, va);
 			}
 
 			if (vb != null)
 			{
-				setEdgeEndPoint(edge, lSite, rSite, vb);
+				setEdgeEndPoint(edge, leftCell, rightCell, vb);
 			}
 
-			cells[lSite.VoronoiID].HalfEdges.Add(new HalfEdge(edge, lSite, rSite));
-			cells[rSite.VoronoiID].HalfEdges.Add(new HalfEdge(edge, rSite, lSite));
+			cells[leftCell.VoronoiID].HalfEdges.Add(new HalfEdge(edge, leftCell, rightCell));
+			cells[rightCell.VoronoiID].HalfEdges.Add(new HalfEdge(edge, rightCell, leftCell));
 
 			return edge;
 		}
 
-		private Edge createBorderEdge(Site lSite, Vertex va, Vertex vb)
+		private Edge createBorderEdge(Cell leftCell, Vertex va, Vertex vb)
 		{
-			Edge edge = new Edge(lSite, null)
+			Edge edge = new Edge(leftCell, null)
 			{
 				VertexA = va,
 				VertexB = vb
@@ -162,15 +161,15 @@ namespace WorldGen.Voronoi
 			return edge;
 		}
 
-		private void setEdgeStartPoint(Edge edge, Site lSite, Site rSite, Vertex v)
+		private void setEdgeStartPoint(Edge edge, Cell leftCell, Cell rightCell, Vertex v)
 		{
 			if (edge.VertexA == null && edge.VertexB == null)
 			{
 				edge.VertexA = v;
-				edge.LeftSite = lSite;
-				edge.RightSite = rSite;
+				edge.LeftCell = leftCell;
+				edge.RightCell = rightCell;
 			}
-			else if (edge.LeftSite == rSite)
+			else if (edge.LeftCell == rightCell)
 			{
 				edge.VertexB = v;
 			}
@@ -180,25 +179,25 @@ namespace WorldGen.Voronoi
 			}
 		}
 
-		private void setEdgeEndPoint(Edge edge, Site lSite, Site rSite, Vertex v)
+		private void setEdgeEndPoint(Edge edge, Cell leftCell, Cell rightCell, Vertex v)
 		{
-			setEdgeStartPoint(edge, rSite, lSite, v);
+			setEdgeStartPoint(edge, rightCell, leftCell, v);
 		}
 
-		private BeachSection createBeachSection(Site site)
+		private BeachSection createBeachSection(Cell cell)
 		{
 			BeachSection beachSection = beachSectionJunkyard.Count > 0 ? beachSectionJunkyard.Pop() : new BeachSection();
 
-			beachSection.Site = site;
+			beachSection.Cell = cell;
 
 			return beachSection;
 		}
 
 		private double leftBreakPoint(BeachSection arc, double directrix)
 		{
-			Site site = arc.Site;
-			double rfocx = site.X;
-			double rfocy = site.Y;
+			Cell cell = arc.Cell;
+			double rfocx = cell.X;
+			double rfocy = cell.Y;
 			double pby2 = rfocy - directrix;
 
 			if (pby2 == 0)
@@ -213,9 +212,9 @@ namespace WorldGen.Voronoi
 				return double.NegativeInfinity;
 			}
 
-			site = lArc.Site;
-			double lfocx = site.X;
-			double lfocy = site.Y;
+			cell = lArc.Cell;
+			double lfocx = cell.X;
+			double lfocy = cell.Y;
 			double plby2 = lfocy - directrix;
 
 			if (plby2 == 0)
@@ -244,8 +243,8 @@ namespace WorldGen.Voronoi
 				return leftBreakPoint(rArc, directrix);
 			}
 
-			Site site = arc.Site;
-			return site.Y == directrix ? site.X : double.PositiveInfinity;
+			Cell cell = arc.Cell;
+			return cell.Y == directrix ? cell.X : double.PositiveInfinity;
 		}
 
 		private void detachBeachSection(BeachSection beachSection)
@@ -304,22 +303,22 @@ namespace WorldGen.Voronoi
 				rArc = disappearingTransitions[i];
 				lArc = disappearingTransitions[i - 1];
 
-				setEdgeStartPoint(rArc.Edge, lArc.Site, rArc.Site, v);
+				setEdgeStartPoint(rArc.Edge, lArc.Cell, rArc.Cell, v);
 			}
 
 
 			lArc = disappearingTransitions[0];
 			rArc = disappearingTransitions[nArcs - 1];
-			rArc.Edge = createEdge(lArc.Site, rArc.Site, null, v);
+			rArc.Edge = createEdge(lArc.Cell, rArc.Cell, null, v);
 
 			attachCircleEvent(lArc);
 			attachCircleEvent(rArc);
 		}
 
-		private void addBeachSection(Site site)
+		private void addBeachSection(Cell cell)
 		{
-			double x = site.X;
-			double directrix = site.Y;
+			double x = cell.X;
+			double directrix = cell.Y;
 
 			BeachSection lArc = null;
 			BeachSection rArc = null;
@@ -369,7 +368,7 @@ namespace WorldGen.Voronoi
 				}
 			}
 
-			BeachSection newArc = createBeachSection(site);
+			BeachSection newArc = createBeachSection(cell);
 			beachLine.insertSuccessor(lArc, newArc);
 
 			if (lArc == null && rArc == null)
@@ -381,10 +380,10 @@ namespace WorldGen.Voronoi
 			{
 				detachCircleEvent(lArc);
 
-				rArc = createBeachSection(lArc.Site);
+				rArc = createBeachSection(lArc.Cell);
 				beachLine.insertSuccessor(newArc, rArc);
 
-				newArc.Edge = rArc.Edge = createEdge(lArc.Site, newArc.Site, null, null);
+				newArc.Edge = rArc.Edge = createEdge(lArc.Cell, newArc.Cell, null, null);
 
 				attachCircleEvent(lArc);
 				attachCircleEvent(rArc);
@@ -394,7 +393,7 @@ namespace WorldGen.Voronoi
 
 			if (lArc != null && rArc == null)
 			{
-				newArc.Edge = createEdge(lArc.Site, newArc.Site, null, null);
+				newArc.Edge = createEdge(lArc.Cell, newArc.Cell, null, null);
 
 				return;
 			}
@@ -404,25 +403,25 @@ namespace WorldGen.Voronoi
 				detachCircleEvent(lArc);
 				detachCircleEvent(rArc);
 
-				Site lSite = lArc.Site;
-				double ax = lSite.X;
-				double ay = lSite.Y;
-				double bx = site.X - ax;
-				double by = site.Y - ay;
+				Cell leftCell = lArc.Cell;
+				double ax = leftCell.X;
+				double ay = leftCell.Y;
+				double bx = cell.X - ax;
+				double by = cell.Y - ay;
 
-				Site rSite = rArc.Site;
-				double cx = rSite.X - ax;
-				double cy = rSite.Y - ay;
+				Cell rightCell = rArc.Cell;
+				double cx = rightCell.X - ax;
+				double cy = rightCell.Y - ay;
 				double d = 2 * (bx * cy - by * cx);
 				double hb = bx * bx + by * by;
 				double hc = cx * cx + cy * cy;
 
 				Vertex v = new Vertex((cy * hb - by * hc) / d + ax, (bx * hc - cx * hb) / d + ay);
 
-				setEdgeStartPoint(rArc.Edge, lSite, rSite, v);
+				setEdgeStartPoint(rArc.Edge, leftCell, rightCell, v);
 
-				newArc.Edge = createEdge(lSite, site, null, v);
-				rArc.Edge = createEdge(site, rSite, null, v);
+				newArc.Edge = createEdge(leftCell, cell, null, v);
+				rArc.Edge = createEdge(cell, rightCell, null, v);
 
 				attachCircleEvent(lArc);
 				attachCircleEvent(rArc);
@@ -441,21 +440,21 @@ namespace WorldGen.Voronoi
 				return;
 			}
 
-			Site lSite = lArc.Site;
-			Site cSite = arc.Site;
-			Site rSite = rArc.Site;
+			Cell leftCell = lArc.Cell;
+			Cell centerCell = arc.Cell;
+			Cell rightCell = rArc.Cell;
 
-			if (lSite == rSite)
+			if (leftCell == rightCell)
 			{
 				return;
 			}
 
-			double bx = cSite.X;
-			double by = cSite.Y;
-			double ax = lSite.X - bx;
-			double ay = lSite.Y - by;
-			double cx = rSite.X - bx;
-			double cy = rSite.Y - by;
+			double bx = centerCell.X;
+			double by = centerCell.Y;
+			double ax = leftCell.X - bx;
+			double ay = leftCell.Y - by;
+			double cx = rightCell.X - bx;
+			double cy = rightCell.Y - by;
 
 			double d = 2 * (ax * cy - ay * cx);
 
@@ -548,12 +547,12 @@ namespace WorldGen.Voronoi
 			int xr = bounds.Right;
 			int yt = bounds.Top;
 			int yb = bounds.Bottom;
-			Site lSite = edge.LeftSite;
-			Site rSite = edge.RightSite;
-			double lx = lSite.X;
-			double ly = lSite.Y;
-			double rx = rSite.X;
-			double ry = rSite.Y;
+			Cell leftCell = edge.LeftCell;
+			Cell rightCell = edge.RightCell;
+			double lx = leftCell.X;
+			double ly = leftCell.Y;
+			double rx = rightCell.X;
+			double ry = rightCell.Y;
 			double fx = (lx + rx) / 2;
 			double fy = (ly + ry) / 2;
 
@@ -902,8 +901,8 @@ namespace WorldGen.Voronoi
 							Console.WriteLine("VB should be set now! LINE 903");
 						}
 
-						Edge edge = createBorderEdge(cell.Site, va, vb);
-						halfEdges.Insert(iLeft + 1, new HalfEdge(edge, cell.Site, null));
+						Edge edge = createBorderEdge(cell, va, vb);
+						halfEdges.Insert(iLeft + 1, new HalfEdge(edge, cell, null));
 						nHalfEdges = halfEdges.Count;
 					}
 				}
@@ -933,10 +932,10 @@ namespace WorldGen.Voronoi
 				{
 					if (point.X != xPointX || point.Y != xPointY)
 					{
-						Site site = new Site(point) { VoronoiID = pointID++ }; //Wrap Vertex into Site object to attach VoronoiID
-						cells.Add(new Cell(site));
+						Cell cell = new Cell(point) { VoronoiID = pointID++ };
+						cells.Add(cell);
 
-						addBeachSection(site);
+						addBeachSection(cell);
 
 						xPointX = point.X;
 						xPointY = point.Y;
