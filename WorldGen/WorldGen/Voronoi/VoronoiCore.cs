@@ -875,30 +875,25 @@ namespace WorldGen.Voronoi
 						{
 							vb = new Vertex(xl, equalWithEpsilon(startPoint.X, xl) ? startPoint.Y : yb);
 
-							cell.CellType = CellType.WestEdge;
+							cell.CellEdgeType = CellEdgeType.WestEdge;
 						}
 						else if (equalWithEpsilon(endPoint.Y, yb) && lessThanEpsilon(endPoint.X, xr))
 						{
 							vb = new Vertex(equalWithEpsilon(startPoint.Y, yb) ? startPoint.X : xr, yb);
 
-							cell.CellType = CellType.SouthEdge;
+							cell.CellEdgeType = CellEdgeType.SouthEdge;
 						}
 						else if (equalWithEpsilon(endPoint.X, xr) && greaterThanEpsilon(endPoint.Y, yt))
 						{
 							vb = new Vertex(xr, equalWithEpsilon(startPoint.X, xr) ? startPoint.Y : yt);
 
-							cell.CellType = CellType.EastEdge;
+							cell.CellEdgeType = CellEdgeType.EastEdge;
 						}
 						else if (equalWithEpsilon(endPoint.Y, yt) && greaterThanEpsilon(endPoint.X, xl))
 						{
 							vb = new Vertex(equalWithEpsilon(startPoint.Y, yt) ? startPoint.X : xl, yt);
 
-							cell.CellType = CellType.NorthEdge;
-						}
-
-						if (vb == null)
-						{
-							Console.WriteLine("VB should be set now! LINE 903");
+							cell.CellEdgeType = CellEdgeType.NorthEdge;
 						}
 
 						Edge edge = createBorderEdge(cell, va, vb);
@@ -921,8 +916,8 @@ namespace WorldGen.Voronoi
 
 			Vertex point = points.Pop();
 			int pointID = 0;
-			double xPointX = double.MinValue;
-			double xPointY = double.MinValue;
+
+			Vertex prevPoint = null; //For filtering out duplicate points
 
 			while (true)
 			{
@@ -930,15 +925,14 @@ namespace WorldGen.Voronoi
 
 				if (point != null && (circle == null || point.Y < circle.Y || (point.Y == circle.Y && point.X < circle.X)))
 				{
-					if (point.X != xPointX || point.Y != xPointY)
+					if (point != prevPoint) //Filters duplicate points
 					{
 						Cell cell = new Cell(point) { VoronoiID = pointID++ };
 						cells.Add(cell);
 
 						addBeachSection(cell);
 
-						xPointX = point.X;
-						xPointY = point.Y;
+						prevPoint = point;
 					}
 
 					point = points.Count > 0 ? points.Pop() : null;

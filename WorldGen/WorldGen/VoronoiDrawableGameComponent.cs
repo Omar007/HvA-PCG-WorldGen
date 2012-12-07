@@ -166,30 +166,32 @@ namespace WorldGen
 				Color color = Color.Yellow;
 				int size = 4;
 
-				switch (cell.CellType)
+				switch (cell.CellEdgeType)
 				{
-					case CellType.WestEdge:
+					case CellEdgeType.WestEdge:
 						color = Color.RosyBrown;
 						size = 6;
 						break;
 
-					case CellType.EastEdge:
+					case CellEdgeType.EastEdge:
 						color = Color.MediumVioletRed;
 						size = 6;
 						break;
 						
-					case CellType.NorthEdge:
+					case CellEdgeType.NorthEdge:
 						color = Color.SaddleBrown;
 						size = 6;
 						break;
 
-					case CellType.SouthEdge:
+					case CellEdgeType.SouthEdge:
 						color = Color.Maroon;
 						size = 6;
 						break;
 				}
 
 				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Vertex.ToVector2(), size);
+
+				spriteBatch.DrawString(sFont, cell.VoronoiID.ToString(), cell.Vertex.ToVector2(), color);
 			}
 
 			HelperFunctions.PrimitivesBatch.DrawRectangle(spriteBatch, Color.Red,

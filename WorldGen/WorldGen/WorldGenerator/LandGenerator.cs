@@ -9,83 +9,80 @@ namespace WorldGen.WorldGenerator
 		#region Fields
 		private Random random;
 
-		private List<Cell> waterCells;
-		private List<Cell> landCells;
+		private List<Cell> worldCells;
 		#endregion
 
 		#region Properties
-		public List<Cell> WaterCells
+		public List<Cell> WorldCells
 		{
-			get { return waterCells; }
-		}
-
-		public List<Cell> LandCells
-		{
-			get { return landCells; }
+			get { return worldCells; }
 		}
 		#endregion
 
 		public LandGenerator()
 		{
 			random = new Random();
-
-			waterCells = new List<Cell>();
-			landCells = new List<Cell>();
 		}
 
-		public void reset()
+		private void setCellLandType(Cell cell)
 		{
-			waterCells.Clear();
-			landCells.Clear();
-		}
-
-		public void generate(VoronoiCore vc)
-		{
-			foreach (Cell cell in vc.Cells)
+			if (cell.CellEdgeType == CellEdgeType.NoEdge && random.NextDouble() > 0.55)
 			{
-				if (cell.CellType == CellType.NoEdge && random.NextDouble() > 0.5)
+				cell.CellLandType = CellLandType.Land;
+			}
+			else
+			{
+				cell.CellLandType = CellLandType.Water;
+			}
+		}
+
+		public void generate(VoronoiCore vc, bool reGenerate)
+		{
+			if (reGenerate) //Reset all cells
+			{
+				foreach (Cell cell in vc.Cells)
 				{
-					landCells.Add(cell);
-				}
-				else
-				{
-					waterCells.Add(cell);
+					cell.CellLandType = CellLandType.Undefined;
 				}
 			}
 
-			List<Cell> landNeighbours = new List<Cell>();
-
-			for(int i = waterCells.Count - 1; i >= 0; i--)
+			foreach (Cell cell in vc.Cells)
 			{
-				Cell cell = waterCells[i];
-
-				if (cell.CellType == CellType.NoEdge)
+				if (cell.CellLandType == CellLandType.Undefined)
+				{
+					setCellLandType(cell);
+				}
+				
+				if (cell.CellEdgeType == CellEdgeType.NoEdge && cell.CellLandType == CellLandType.Water)
 				{
 					int neighbourCount = 0;
-
-					landNeighbours.Clear();
+					int landNeighbourCount = 0;
 
 					foreach (HalfEdge halfEdge in cell.HalfEdges)
 					{
-						if (halfEdge.Edge.LeftCell == cell && landCells.Contains(halfEdge.Edge.RightCell))
+						Cell otherCell = halfEdge.Edge.LeftCell == cell ? halfEdge.Edge.RightCell : halfEdge.Edge.LeftCell;
+
+						if (otherCell.CellLandType == CellLandType.Undefined)
 						{
-							landNeighbours.Add(halfEdge.Edge.RightCell);
+							setCellLandType(otherCell);
 						}
-						else if (halfEdge.Edge.RightCell == cell && landCells.Contains(halfEdge.Edge.LeftCell))
+
+						if (otherCell.CellLandType == CellLandType.Land)
 						{
-							landNeighbours.Add(halfEdge.Edge.LeftCell);
+							landNeighbourCount++;
 						}
 
 						neighbourCount++;
 					}
 
-					if (landNeighbours.Count > neighbourCount * 0.5)
+					if (landNeighbourCount > neighbourCount * 0.5)
 					{
-						waterCells.Remove(cell);
-						landCells.Add(cell);
+						cell.CellLandType = CellLandType.Land;
 					}
 				}
 			}
+
+			worldCells = vc.Cells;
 		}
 	}
 }

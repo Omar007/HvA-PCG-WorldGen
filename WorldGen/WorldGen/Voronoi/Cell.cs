@@ -2,13 +2,20 @@
 
 namespace WorldGen.Voronoi
 {
-	public enum CellType
+	public enum CellEdgeType
 	{
 		NoEdge,
 		WestEdge,
 		EastEdge,
 		NorthEdge,
 		SouthEdge
+	}
+
+	public enum CellLandType
+	{
+		Undefined,
+		Land,
+		Water
 	}
 
 	public class Cell
@@ -20,7 +27,9 @@ namespace WorldGen.Voronoi
 
 		private List<HalfEdge> halfEdges;
 
-		private CellType cellType;
+		private CellEdgeType cellEdgeType;
+
+		private CellLandType cellLandType;
 		#endregion
 
 		#region Properties
@@ -50,10 +59,16 @@ namespace WorldGen.Voronoi
 			get { return halfEdges; }
 		}
 
-		public CellType CellType
+		public CellEdgeType CellEdgeType
 		{
-			get { return cellType; }
-			set { cellType = value; }
+			get { return cellEdgeType; }
+			set { cellEdgeType = value; }
+		}
+
+		public CellLandType CellLandType
+		{
+			get { return cellLandType; }
+			set { cellLandType = value; }
 		}
 		#endregion
 
@@ -68,7 +83,9 @@ namespace WorldGen.Voronoi
 
 			halfEdges = new List<HalfEdge>();
 
-			cellType = CellType.NoEdge;
+			cellEdgeType = CellEdgeType.NoEdge;
+
+			cellLandType = CellLandType.Undefined;
 		}
 
 		public int prepare()
