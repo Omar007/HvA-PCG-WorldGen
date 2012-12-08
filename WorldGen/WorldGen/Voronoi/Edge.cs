@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-
+﻿
 namespace WorldGen.Voronoi
 {
 	public class Edge
@@ -36,6 +35,18 @@ namespace WorldGen.Voronoi
 			get { return vb; }
 			set { vb = value; }
 		}
+
+		//Check whether there is a delauny edge first ('HasDelaunyEdge')!!
+		public Vertex DelaunyVertexA
+		{
+			get { return leftCell.Vertex; }
+		}
+
+		//Check whether there is a delauny edge first ('HasDelaunyEdge')!!
+		public Vertex DelaunyVertexB
+		{
+			get { return rightCell.Vertex; }
+		}
 		#endregion
 
 		public Edge(Cell leftCell, Cell rightCell)
@@ -50,11 +61,6 @@ namespace WorldGen.Voronoi
 		public bool HasDelaunyEdge
 		{
 			get { return leftCell != null && rightCell != null;}
-		}
-
-		public DelaunyEdge DelaunyEdge
-		{
-			get { return new DelaunyEdge(leftCell, rightCell); }
 		}
 	}
 }

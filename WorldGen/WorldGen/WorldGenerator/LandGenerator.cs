@@ -1,88 +1,91 @@
 ﻿using System;
-using System.Collections.Generic;
 using WorldGen.Voronoi;
 
 namespace WorldGen.WorldGenerator
 {
-	public class LandGenerator
+	public class LandGenerator : WorldGenerator
 	{
-		#region Fields
-		private Random random;
-
-		private List<Cell> worldCells;
-		#endregion
-
-		#region Properties
-		public List<Cell> WorldCells
-		{
-			get { return worldCells; }
-		}
-		#endregion
-
 		public LandGenerator()
+			: base()
 		{
-			random = new Random();
 		}
 
-		private void setCellLandType(Cell cell)
+		private void setLandCells(Cell cell)
 		{
-			if (cell.CellEdgeType == CellEdgeType.NoEdge && random.NextDouble() > 0.55)
-			{
-				cell.CellLandType = CellLandType.Land;
-			}
-			else
-			{
-				cell.CellLandType = CellLandType.Water;
-			}
-		}
+			double halfLandMark = cell.HalfEdges.Count * 0.5;
+			int landNeighbourCount = 0;
 
-		public void generate(VoronoiCore vc, bool reGenerate)
-		{
-			if (reGenerate) //Reset all cells
+			foreach (HalfEdge halfEdge in cell.HalfEdges)
 			{
-				foreach (Cell cell in vc.Cells)
+				Cell otherCell = halfEdge.NeighbourCell;
+
+				if (otherCell != null && otherCell.CellLandType == CellLandType.Land)
 				{
-					cell.CellLandType = CellLandType.Undefined;
+					landNeighbourCount++;
+
+					if (landNeighbourCount > halfLandMark) //Surrounded by land for more than 50%; make myself land. Overrides Ocean.
+					{
+						cell.CellLandType = CellLandType.Land;
+
+						if (otherCell.CellLandType != CellLandType.Land)
+						{
+							setLandCells(otherCell);
+						}
+					}
+				}
+			}
+		}
+
+		private void setOceanCells(Cell cell)
+		{
+			foreach (HalfEdge halfEdge in cell.HalfEdges)
+			{
+				Cell otherCell = halfEdge.NeighbourCell;
+
+				if (otherCell != null && otherCell.CellLandType == CellLandType.Water)
+				{
+					otherCell.CellLandType = CellLandType.Ocean;
+					setOceanCells(otherCell);
+				}
+			}
+		}
+
+		protected override void reset(VoronoiCore vc)
+		{
+			foreach (Cell cell in vc.Cells)
+			{
+				if (cell.CellEdgeType == CellEdgeType.NoEdge && Random.NextDouble() > 0.6) //Not a cell on the edge of the map and land 'threshold' reached.
+				{
+					cell.CellLandType = CellLandType.Land;
+				}
+				else if (cell.CellEdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map
+				{
+					cell.CellLandType = CellLandType.Ocean;
+				}
+				else //Everything else is water
+				{
+					cell.CellLandType = CellLandType.Water;
+				}
+			}
+		}
+
+		protected override void generate(VoronoiCore vc)
+		{
+			foreach (Cell cell in vc.Cells)
+			{
+				if (cell.CellEdgeType == CellEdgeType.NoEdge && cell.CellLandType != CellLandType.Land)
+				{
+					setLandCells(cell);
 				}
 			}
 
 			foreach (Cell cell in vc.Cells)
 			{
-				if (cell.CellLandType == CellLandType.Undefined)
+				if (cell.CellLandType == CellLandType.Ocean)
 				{
-					setCellLandType(cell);
-				}
-				
-				if (cell.CellEdgeType == CellEdgeType.NoEdge && cell.CellLandType == CellLandType.Water)
-				{
-					int neighbourCount = 0;
-					int landNeighbourCount = 0;
-
-					foreach (HalfEdge halfEdge in cell.HalfEdges)
-					{
-						Cell otherCell = halfEdge.Edge.LeftCell == cell ? halfEdge.Edge.RightCell : halfEdge.Edge.LeftCell;
-
-						if (otherCell.CellLandType == CellLandType.Undefined)
-						{
-							setCellLandType(otherCell);
-						}
-
-						if (otherCell.CellLandType == CellLandType.Land)
-						{
-							landNeighbourCount++;
-						}
-
-						neighbourCount++;
-					}
-
-					if (landNeighbourCount > neighbourCount * 0.5)
-					{
-						cell.CellLandType = CellLandType.Land;
-					}
+					setOceanCells(cell);
 				}
 			}
-
-			worldCells = vc.Cells;
 		}
 	}
 }

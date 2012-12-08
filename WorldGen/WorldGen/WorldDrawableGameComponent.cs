@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
-using System.Linq;
+using WorldGen.HelperFunctions;
 using WorldGen.Voronoi;
 using WorldGen.WorldGenerator;
 
@@ -18,9 +18,13 @@ namespace WorldGen
 		private SpriteFont sFont;
 
 		private KeyboardState lastState;
-		private TimeSpan computeTime;
 
+		private TimeSpan landComputeTime;
+		private TimeSpan elevationComputeTime;
+
+		private VoronoiCore vc;
 		private LandGenerator landGenerator;
+		private ElevationGenerator elevationGenerator;
 		private int landCount;
 		private int waterCount;
 
@@ -49,6 +53,7 @@ namespace WorldGen
 			sFont = Game.Content.Load<SpriteFont>("Fonts/Arial12");
 
 			landGenerator = new LandGenerator();
+			elevationGenerator = new ElevationGenerator();
 
 			base.LoadContent();
 		}
@@ -72,7 +77,7 @@ namespace WorldGen
 
 		public override void Draw(GameTime gameTime)
 		{
-			if (texture == null || landGenerator.WorldCells == null) //No land generated yet
+			if (texture == null) //No land generated yet
 			{
 				return;
 			}
@@ -81,16 +86,17 @@ namespace WorldGen
 
 			spriteBatch.Draw(texture, Vector2.Zero, Color.White);
 
-			foreach (Cell cell in landGenerator.WorldCells)
+			foreach (Cell cell in vc.Cells)
 			{
-				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, cell.CellLandType == CellLandType.Water ? Color.LightBlue : Color.SandyBrown,
-					cell.Vertex.ToVector2(), 10);
+				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Black, cell.Vertex.ToVector2(), 5);
+				spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2(), Color.Black);
 			}
 
-			spriteBatch.DrawString(sFont, computeTime.ToString(), new Vector2(0, 100), Color.Brown);
+			spriteBatch.DrawString(sFont, landComputeTime.ToString(), new Vector2(0, 100), Color.Brown);
+			spriteBatch.DrawString(sFont, elevationComputeTime.ToString(), new Vector2(0, 120), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 120), Color.Brown);
-			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 140), Color.Brown);
+			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 140), Color.Brown);
+			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 160), Color.Brown);
 
 			spriteBatch.End();
 
@@ -99,27 +105,33 @@ namespace WorldGen
 
 		public void clear()
 		{
+			landCount = 0;
+			waterCount = 0;
+
 			texture = null;
 		}
 
 		public void generate(VoronoiCore vc)
 		{
+			this.vc = vc;
+
 			clear();
 
 			Stopwatch sw = Stopwatch.StartNew();
 			landGenerator.generate(vc, true);
 			sw.Stop();
-			computeTime = sw.Elapsed;
+			landComputeTime = sw.Elapsed;
 
-			landCount = landGenerator.WorldCells.Count(x => x.CellLandType == CellLandType.Land);
-			waterCount = landGenerator.WorldCells.Count - landCount;
-
+			sw.Restart();
+			elevationGenerator.generate(vc, true);
+			sw.Stop();
+			elevationComputeTime = sw.Elapsed;
 
 			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
 			graphics.Clear(System.Drawing.Color.Transparent);
 
-			foreach (Cell cell in landGenerator.WorldCells)
+			foreach (Cell cell in vc.Cells)
 			{
 				System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
 				foreach (HalfEdge he in cell.HalfEdges)
@@ -131,17 +143,51 @@ namespace WorldGen
 				}
 				gPath.CloseFigure();
 
-				graphics.FillRegion(cell.CellLandType == CellLandType.Land ? System.Drawing.Brushes.LightBlue : System.Drawing.Brushes.SandyBrown,
-					new System.Drawing.Region(gPath));
+				System.Drawing.Color color = System.Drawing.Color.Transparent;
+				System.Drawing.Color gotoColor = System.Drawing.Color.Transparent;
+
+				float rgbValue = 0;
+
+				switch (cell.CellLandType)
+				{
+					case CellLandType.Land:
+						color = System.Drawing.Color.SaddleBrown;
+						gotoColor = System.Drawing.Color.SandyBrown;
+						rgbValue = (cell.CellElevationLevel / CellElevationLevel.Maximum);
+						landCount++;
+						break;
+
+					case CellLandType.Water:
+						color = System.Drawing.Color.Blue;
+						gotoColor = System.Drawing.Color.LightBlue;
+						rgbValue = (cell.CellElevationLevel / CellElevationLevel.Maximum);
+						waterCount++;
+						break;
+
+					case CellLandType.Ocean:
+						color = System.Drawing.Color.DarkBlue;
+						gotoColor = System.Drawing.Color.DarkBlue;
+						waterCount++;
+						break;
+				}
+
+				if (float.IsNaN(cell.CellElevationLevel)) //Prevent 'Undefined' areas from becoming black.
+				{
+					rgbValue = 0;
+				}
+
+				graphics.FillRegion(new System.Drawing.SolidBrush(color.Lerp(gotoColor, rgbValue)), new System.Drawing.Region(gPath));
 			}
 
 			graphics.Dispose();
 
-			System.Drawing.Imaging.BitmapData bData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
-			byte[] bytes = new byte[bData.Height * bData.Stride];
-			System.Runtime.InteropServices.Marshal.Copy(bData.Scan0, bytes, 0, bytes.Length);
-			texture = new Texture2D(GraphicsDevice, bitmap.Width, bitmap.Height);
-			texture.SetData(bytes);
+			//Convert Bitmap to XNA texture
+			using (System.IO.MemoryStream s = new System.IO.MemoryStream())
+			{
+				bitmap.Save(s, System.Drawing.Imaging.ImageFormat.Png);
+				s.Seek(0, System.IO.SeekOrigin.Begin);
+				texture = Texture2D.FromStream(GraphicsDevice, s);
+			}
 		}
 	}
 }

@@ -7,14 +7,15 @@ namespace WorldGen.Voronoi
 		#region Fields
 		private Edge edge;
 		private Cell cell;
+		private Cell neighbourCell;
 
 		private double angle;
 		#endregion
 
 		#region Properties
-		public Edge Edge
+		public Cell NeighbourCell
 		{
-			get { return edge; }
+			get { return neighbourCell; }
 		}
 
 		public Vertex StartPoint
@@ -33,6 +34,7 @@ namespace WorldGen.Voronoi
 			this.edge = edge;
 
 			this.cell = leftCell;
+			this.neighbourCell = rightCell;
 
 			if (rightCell != null)
 			{

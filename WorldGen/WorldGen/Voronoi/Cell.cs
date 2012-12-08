@@ -15,30 +15,33 @@ namespace WorldGen.Voronoi
 	{
 		Undefined,
 		Land,
-		Water
+		Water,
+		Ocean
+	}
+
+	public class CellElevationLevel
+	{
+		public static readonly float SeaLevel = -1;
+		public static readonly float GroundLevel = 0;
+		public static readonly float Low = 1;
+		public static readonly float Medium = 2;
+		public static readonly float High = 3;
+		public static readonly float Maximum = 4;
 	}
 
 	public class Cell
 	{
 		#region Fields
-		private int voronoiID;
-
 		private Vertex vertex;
 
 		private List<HalfEdge> halfEdges;
 
 		private CellEdgeType cellEdgeType;
-
 		private CellLandType cellLandType;
+		private float cellElevationLevel;
 		#endregion
 
 		#region Properties
-		public int VoronoiID
-		{
-			get { return voronoiID; }
-			set { voronoiID = value; }
-		}
-
 		public double X
 		{
 			get { return vertex.X; }
@@ -70,6 +73,12 @@ namespace WorldGen.Voronoi
 			get { return cellLandType; }
 			set { cellLandType = value; }
 		}
+
+		public float CellElevationLevel
+		{
+			get { return cellElevationLevel; }
+			set { cellElevationLevel = value; }
+		}
 		#endregion
 
 		public Cell(double x, double y)
@@ -84,8 +93,8 @@ namespace WorldGen.Voronoi
 			halfEdges = new List<HalfEdge>();
 
 			cellEdgeType = CellEdgeType.NoEdge;
-
 			cellLandType = CellLandType.Undefined;
+			cellElevationLevel = float.NaN;
 		}
 
 		public int prepare()
@@ -94,9 +103,9 @@ namespace WorldGen.Voronoi
 
 			while (iHalfEdge-- > 0)
 			{
-				Edge edge = halfEdges[iHalfEdge].Edge;
+				HalfEdge edge = halfEdges[iHalfEdge];
 
-				if (edge.VertexB == null || edge.VertexA == null)
+				if (edge.StartPoint == null || edge.EndPoint == null)
 				{
 					halfEdges.RemoveAt(iHalfEdge);
 				}

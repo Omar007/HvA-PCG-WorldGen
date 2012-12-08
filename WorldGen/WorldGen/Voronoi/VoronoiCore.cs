@@ -19,17 +19,19 @@ namespace WorldGen.Voronoi
 
 		private CircleEvent firstCircleEvent;
 
-		private List<Edge> edges;
-		private List<Cell> cells;
+		//private List<Edge> edges;
+		//private List<Cell> cells;
+		private HashSet<Edge> edges;
+		private HashSet<Cell> cells;
 		#endregion
 
 		#region Properties
-		public List<Edge> Edges
+		public HashSet<Edge> Edges
 		{
 			get { return edges; }
 		}
 
-		public List<Cell> Cells
+		public HashSet<Cell> Cells
 		{
 			get { return cells; }
 		}
@@ -42,9 +44,11 @@ namespace WorldGen.Voronoi
 
 			beachSectionJunkyard = new Stack<BeachSection>();
 			circleEventJunkyard = new Stack<CircleEvent>();
-			
-			edges = new List<Edge>();
-			cells = new List<Cell>();
+
+			//edges = new List<Edge>();
+			//cells = new List<Cell>();
+			edges = new HashSet<Edge>();
+			cells = new HashSet<Cell>();
 		}
 
 		#region EPSILON Comparisons
@@ -142,8 +146,8 @@ namespace WorldGen.Voronoi
 				setEdgeEndPoint(edge, leftCell, rightCell, vb);
 			}
 
-			cells[leftCell.VoronoiID].HalfEdges.Add(new HalfEdge(edge, leftCell, rightCell));
-			cells[rightCell.VoronoiID].HalfEdges.Add(new HalfEdge(edge, rightCell, leftCell));
+			leftCell.HalfEdges.Add(new HalfEdge(edge, leftCell, rightCell));
+			rightCell.HalfEdges.Add(new HalfEdge(edge, rightCell, leftCell));
 
 			return edge;
 		}
@@ -822,19 +826,30 @@ namespace WorldGen.Voronoi
 
 		private void clipEdges(Boundary bounds)
 		{
-			int iEdge = edges.Count;
+			//int iEdge = edges.Count;
 
-			while (iEdge-- > 0)
+			//while (iEdge-- > 0)
+			//{
+			//	Edge edge = edges[iEdge];
+
+			//	if (!connectEdge(edge, bounds) || !clipEdge(edge, bounds) || (Math.Abs(edge.VertexA.X - edge.VertexB.X) < EPSILON && Math.Abs(edge.VertexA.Y - edge.VertexB.Y) < EPSILON))
+			//	{
+			//		edge.VertexA = null;
+			//		edge.VertexB = null;
+			//		edges.RemoveAt(iEdge);
+			//	}
+			//}
+
+			edges.RemoveWhere(delegate(Edge edge)
 			{
-				Edge edge = edges[iEdge];
-
 				if (!connectEdge(edge, bounds) || !clipEdge(edge, bounds) || (Math.Abs(edge.VertexA.X - edge.VertexB.X) < EPSILON && Math.Abs(edge.VertexA.Y - edge.VertexB.Y) < EPSILON))
 				{
 					edge.VertexA = null;
 					edge.VertexB = null;
-					edges.RemoveAt(iEdge);
+					return true;
 				}
-			}
+				return false;
+			});
 		}
 
 		private void closeCells(Boundary bounds)
@@ -844,12 +859,13 @@ namespace WorldGen.Voronoi
 			int yt = bounds.Top;
 			int yb = bounds.Bottom;
 
-			int iCell = cells.Count;
+			//int iCell = cells.Count;
 
-			while (iCell-- > 0)
+			//while (iCell-- > 0)
+			//{
+			//	Cell cell = cells[iCell];
+			foreach(Cell cell in cells)
 			{
-				Cell cell = cells[iCell];
-
 				if (cell.prepare() == 0)
 				{
 					continue;
@@ -915,8 +931,6 @@ namespace WorldGen.Voronoi
 			Stack<Vertex> points = new Stack<Vertex>(unsortedPoints);
 
 			Vertex point = points.Pop();
-			int pointID = 0;
-
 			Vertex prevPoint = null; //For filtering out duplicate points
 
 			while (true)
@@ -927,7 +941,7 @@ namespace WorldGen.Voronoi
 				{
 					if (point != prevPoint) //Filters duplicate points
 					{
-						Cell cell = new Cell(point) { VoronoiID = pointID++ };
+						Cell cell = new Cell(point);
 						cells.Add(cell);
 
 						addBeachSection(cell);

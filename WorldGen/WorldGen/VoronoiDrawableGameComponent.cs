@@ -132,7 +132,7 @@ namespace WorldGen
 				wdgc.clear();
 			}
 
-			if (Keyboard.GetState().IsKeyDown(Keys.F1) && lastState.IsKeyUp(Keys.F1))
+			if (Keyboard.GetState().IsKeyDown(Keys.F1) && (lastState.IsKeyUp(Keys.F1) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
 			{
 				wdgc.generate(vc);
 			}
@@ -154,8 +154,7 @@ namespace WorldGen
 
 				if (edge.HasDelaunyEdge)
 				{
-					DelaunyEdge delaunyEdge = edge.DelaunyEdge;
-					HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.Green, delaunyEdge.VertexA.ToVector2(), delaunyEdge.VertexB.ToVector2());
+					HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.Green, edge.DelaunyVertexA.ToVector2(), edge.DelaunyVertexB.ToVector2());
 
 					delaunyEdgeCount++;
 				}
@@ -169,29 +168,29 @@ namespace WorldGen
 				switch (cell.CellEdgeType)
 				{
 					case CellEdgeType.WestEdge:
-						color = Color.RosyBrown;
+						color = Color.Red;
 						size = 6;
 						break;
 
 					case CellEdgeType.EastEdge:
-						color = Color.MediumVioletRed;
+						color = Color.Red;
 						size = 6;
 						break;
 						
 					case CellEdgeType.NorthEdge:
-						color = Color.SaddleBrown;
+						color = Color.White;
 						size = 6;
 						break;
 
 					case CellEdgeType.SouthEdge:
-						color = Color.Maroon;
+						color = Color.White;
 						size = 6;
 						break;
 				}
 
 				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Vertex.ToVector2(), size);
 
-				spriteBatch.DrawString(sFont, cell.VoronoiID.ToString(), cell.Vertex.ToVector2(), color);
+				//spriteBatch.DrawString(sFont, cell.VoronoiID.ToString(), cell.Vertex.ToVector2(), color);
 			}
 
 			HelperFunctions.PrimitivesBatch.DrawRectangle(spriteBatch, Color.Red,
