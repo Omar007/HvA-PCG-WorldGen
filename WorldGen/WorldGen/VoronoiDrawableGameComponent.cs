@@ -19,7 +19,7 @@ namespace WorldGen
 		private KeyboardState lastState;
 		private TimeSpan computeTime;
 
-		private const int pointCount = 500;
+		private const int pointCount = 1000;
 		private Boundary bounds;
 		private VoronoiCore vc;
 

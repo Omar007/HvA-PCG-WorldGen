@@ -23,7 +23,7 @@ namespace WorldGen.WorldGenerator
 				{
 					landNeighbourCount++;
 
-					if (landNeighbourCount > halfLandMark) //Surrounded by land for more than 50%; make myself land. Overrides Ocean.
+					if (landNeighbourCount > halfLandMark) //Surrounded by land for more than 50%; make myself land.
 					{
 						cell.CellLandType = CellLandType.Land;
 

@@ -7,124 +7,193 @@ namespace WorldGen.WorldGenerator
 {
 	public class ElevationGenerator : WorldGenerator
 	{
-		private HashSet<Cell> handledWaterCells;
-		private HashSet<Cell> handledLandCells;
+		private HashSet<Cell> handledCells;
 
 		public ElevationGenerator()
 			: base()
 		{
-			handledWaterCells = new HashSet<Cell>();
-			handledLandCells = new HashSet<Cell>();
+			handledCells = new HashSet<Cell>();
 		}
 
 		private void setLandElevation(Cell cell)
 		{
-			float highestNeighbourLevel = CellElevationLevel.SeaLevel;
-			float lowestNeighbourLevel = CellElevationLevel.Maximum;
-
-			foreach (HalfEdge halfEdge in cell.HalfEdges)
+			if (cell.CellLandType != CellLandType.Land)
 			{
-				Cell otherCell = halfEdge.NeighbourCell;
-
-				if (otherCell != null && otherCell.CellLandType != CellLandType.Water)
-				{
-					if (otherCell.CellElevationLevel > highestNeighbourLevel)
-					{
-						highestNeighbourLevel = otherCell.CellElevationLevel;
-					}
-
-					if (otherCell.CellElevationLevel < lowestNeighbourLevel)
-					{
-						lowestNeighbourLevel = otherCell.CellElevationLevel;
-					}
-
-
-
-					if (lowestNeighbourLevel == CellElevationLevel.SeaLevel)
-					{
-						if (lowestNeighbourLevel == highestNeighbourLevel) //Only SeaLevel elevation level found in neighbours
-						{
-							lowestNeighbourLevel = highestNeighbourLevel = CellElevationLevel.GroundLevel;
-						}
-						else
-						{
-							lowestNeighbourLevel = CellElevationLevel.GroundLevel;
-						}
-					}
-
-					//lowestNeighbourLevel += 0.5f;
-
-					if (lowestNeighbourLevel > CellElevationLevel.Maximum)
-					{
-						lowestNeighbourLevel = highestNeighbourLevel = CellElevationLevel.Maximum;
-					}
-					else if (lowestNeighbourLevel > highestNeighbourLevel)
-					{
-						highestNeighbourLevel = lowestNeighbourLevel;
-					}
-
-					float elevationDiff = highestNeighbourLevel - lowestNeighbourLevel;
-
-					if (elevationDiff > 2 || elevationDiff == 0)
-					{
-						cell.CellElevationLevel = (float)Math.Round(lowestNeighbourLevel + (Random.NextDouble() * 2));
-					}
-					else
-					{
-						cell.CellElevationLevel = (float)Math.Round(lowestNeighbourLevel + (Random.NextDouble() * elevationDiff));
-					}
-
-					if (cell.CellElevationLevel > CellElevationLevel.Maximum)
-					{
-						cell.CellElevationLevel = CellElevationLevel.Maximum;
-					}
-
-
-
-					if (otherCell.CellLandType == CellLandType.Land && !handledLandCells.Contains(otherCell))
-					{
-						handledLandCells.Add(cell);
-						setLandElevation(otherCell);
-					}
-				}
+				return;
 			}
-		}
 
-		private void setWaterElevation(Cell cell, ref float lowestLand)
-		{
+			float highestNeighbourLevel = float.MinValue;
+			float lowestNeighbourLevel = float.MaxValue;
+
 			foreach (HalfEdge halfEdge in cell.HalfEdges)
 			{
 				Cell otherCell = halfEdge.NeighbourCell;
 
 				if (otherCell != null)
 				{
-					if (otherCell.CellLandType == CellLandType.Land && otherCell.CellElevationLevel < lowestLand)
+					if (otherCell.CellLandType == CellLandType.Ocean)
 					{
-						lowestLand = otherCell.CellElevationLevel;
+						//Set land something between ground level and the highest allowed.
+						cell.CellElevationLevel = (float)Math.Round(Random.NextDouble() * CellElevationLevel.Low);
+
+						handledCells.Add(cell);
 					}
-					else if (otherCell.CellLandType == CellLandType.Water && !handledWaterCells.Contains(otherCell))
+					else if (otherCell.CellLandType == CellLandType.Land && float.IsNaN(otherCell.CellElevationLevel))
 					{
-						handledWaterCells.Add(cell);
-						setWaterElevation(otherCell, ref lowestLand);
+						if (!handledCells.Contains(otherCell))
+						{
+							bool wasNotYetSet = float.IsNaN(cell.CellElevationLevel);
+
+							if (wasNotYetSet)
+							{
+								cell.CellElevationLevel = 0;
+							}
+
+							setLandElevation(otherCell);
+
+							if (wasNotYetSet)
+							{
+								cell.CellElevationLevel = float.NaN;
+							}
+						}
+
+						//We are already set so go to the next
+						if (handledCells.Contains(cell))
+						{
+							continue;
+						}
+
+						//We can use the neighbour as reference for our height
+						if (handledCells.Contains(otherCell))
+						{
+							if (otherCell.CellElevationLevel > highestNeighbourLevel)
+							{
+								highestNeighbourLevel = otherCell.CellElevationLevel;
+							}
+
+							if (otherCell.CellElevationLevel < lowestNeighbourLevel)
+							{
+								lowestNeighbourLevel = otherCell.CellElevationLevel;
+							}
+						}
 					}
 				}
 			}
 
-			cell.CellElevationLevel = lowestLand;
-			handledWaterCells.Remove(cell);
+			if (float.IsNaN(cell.CellElevationLevel))
+			{
+				float finalElevationLevel = 0;
+
+				if (lowestNeighbourLevel != float.MaxValue && highestNeighbourLevel != float.MinValue)
+				{
+					float elevationDiff = highestNeighbourLevel - lowestNeighbourLevel;
+
+					if (elevationDiff == 0)
+					{
+						finalElevationLevel = lowestNeighbourLevel + (float)Math.Round(Random.NextDouble());
+					}
+					else if (elevationDiff > 2)
+					{
+						finalElevationLevel = lowestNeighbourLevel + (float)Math.Round(Random.NextDouble() * 2);
+					}
+					else
+					{
+						finalElevationLevel = lowestNeighbourLevel + (float)Math.Round(Random.NextDouble() * elevationDiff);
+					}
+
+					if (finalElevationLevel > CellElevationLevel.Maximum)
+					{
+						finalElevationLevel = CellElevationLevel.Maximum;
+					}
+				}
+				//No neighbours found to use as reference.
+				//Just take something between GroundLevel and the specified max.
+				else
+				{
+					finalElevationLevel = (float)Math.Round(Random.NextDouble() * CellElevationLevel.Low);
+				}
+
+				cell.CellElevationLevel = finalElevationLevel;
+			}
+
+			handledCells.Add(cell);
+		}
+
+		private void setWaterElevation(Cell cell, ref float lowestLand)
+		{
+			if (cell.CellLandType != CellLandType.Water)
+			{
+				return;
+			}
+
+			foreach (HalfEdge halfEdge in cell.HalfEdges)
+			{
+				Cell otherCell = halfEdge.NeighbourCell;
+
+				if (otherCell != null)
+				{
+					if (otherCell.CellLandType == CellLandType.Land)
+					{
+						if (!handledCells.Contains(otherCell))
+						{
+							setLandElevation(otherCell);
+						}
+						
+						if (otherCell.CellElevationLevel < lowestLand)
+						{
+							lowestLand = otherCell.CellElevationLevel;
+							cell.CellElevationLevel = lowestLand;
+							handledCells.Add(cell);
+						}
+					}
+					else if (otherCell.CellLandType == CellLandType.Water)
+					{
+						if (!handledCells.Contains(otherCell) && float.IsNaN(otherCell.CellElevationLevel))
+						{
+							bool wasNotYetSet = float.IsNaN(cell.CellElevationLevel);
+
+							if (wasNotYetSet)
+							{
+								cell.CellElevationLevel = 0;
+							}
+
+							setWaterElevation(otherCell, ref lowestLand);
+							
+							if (wasNotYetSet)
+							{
+								cell.CellElevationLevel = float.NaN;
+							}
+						}
+
+						if (handledCells.Contains(otherCell))
+						{
+							if (otherCell.CellElevationLevel > lowestLand)
+							{
+								otherCell.CellElevationLevel = lowestLand;
+								setWaterElevation(otherCell, ref lowestLand);
+							}
+							else
+							{
+								lowestLand = otherCell.CellElevationLevel;
+							}
+							cell.CellElevationLevel = lowestLand;
+							handledCells.Add(cell);
+						}
+					}
+				}
+			}
 		}
 
 		protected override void reset(VoronoiCore vc)
 		{
-			handledWaterCells.Clear();
-			handledLandCells.Clear();
+			handledCells.Clear();
 
 			foreach (Cell cell in vc.Cells)
 			{
 				switch (cell.CellLandType)
 				{
 					case CellLandType.Land:
-						cell.CellElevationLevel = CellElevationLevel.GroundLevel;
+						cell.CellElevationLevel = float.NaN;
 						break;
 
 					case CellLandType.Ocean: //Ocean always at sea level
@@ -140,43 +209,67 @@ namespace WorldGen.WorldGenerator
 
 		protected override void generate(VoronoiCore vc)
 		{
-			Stopwatch sw = Stopwatch.StartNew();
+			float lowestLand = float.MaxValue;
 
 			foreach (Cell cell in vc.Cells)
 			{
-				if (cell.CellLandType == CellLandType.Land && !handledLandCells.Contains(cell))
+				if (cell.CellLandType == CellLandType.Land && !handledCells.Contains(cell)) //&& float.IsNaN(cell.CellElevationLevel)
 				{
 					setLandElevation(cell);
-
-					//if (handledLandCells.Count > 0) throw new Exception();
 				}
-			}
-
-			sw.Stop();
-
-			TimeSpan land = sw.Elapsed;
-
-			sw.Restart();
-
-			foreach (Cell cell in vc.Cells)
-			{
-				if (cell.CellLandType == CellLandType.Water && float.IsNaN(cell.CellElevationLevel))
+				else if(cell.CellLandType == CellLandType.Water)
 				{
-					float lowestRef = CellElevationLevel.Maximum;
-					setWaterElevation(cell, ref lowestRef);
-
-					if (handledWaterCells.Count > 0) throw new Exception(); //All water cells should have been handled here
+					if (handledCells.Contains(cell))
+					{
+						cell.CellElevationLevel = lowestLand;
+					}
+					else //float.IsNaN(cell.CellElevationLevel)
+					{
+						lowestLand = CellElevationLevel.Maximum;
+						setWaterElevation(cell, ref lowestLand);
+						cell.CellElevationLevel = lowestLand;
+					}
 				}
 			}
 
-			sw.Stop();
 
-			TimeSpan water = sw.Elapsed;
+			//Stopwatch sw = Stopwatch.StartNew();
 
-			if (water > land)
-			{
-				Console.WriteLine();
-			}
+			//foreach (Cell cell in vc.Cells)
+			//{
+			//	if (cell.CellLandType == CellLandType.Land && !handledLandCells.Contains(cell)) //&& float.IsNaN(cell.CellElevationLevel)
+			//	{
+			//		setLandElevation(cell);
+			//	}
+			//}
+
+			//sw.Stop();
+			//TimeSpan land = sw.Elapsed;
+			//sw.Restart();
+
+			//float lowestLand = float.MaxValue;
+
+			//foreach (Cell cell in vc.Cells)
+			//{
+			//	if (handledWaterCells.Contains(cell))
+			//	{
+			//		cell.CellElevationLevel = lowestLand;
+			//	}
+			//	else if (cell.CellLandType == CellLandType.Water) //&& float.IsNaN(cell.CellElevationLevel)
+			//	{
+			//		lowestLand = CellElevationLevel.Maximum;
+			//		setWaterElevation(cell, ref lowestLand);
+			//		cell.CellElevationLevel = lowestLand;
+			//	}
+			//}
+
+			//sw.Stop();
+			//TimeSpan water = sw.Elapsed;
+
+			//if (water > land)
+			//{
+			//	Console.WriteLine();
+			//}
 		}
 	}
 }
