@@ -23,12 +23,10 @@ namespace WorldGen
 		private Boundary bounds;
 		private VoronoiCore vc;
 
-		private WorldDrawableGameComponent wdgc;
-
-		public VoronoiDrawableGameComponent(Game game)
+		public VoronoiDrawableGameComponent(Game game, VoronoiCore vc)
 			: base(game)
 		{
-			// TODO: Construct any child components here
+			this.vc = vc;
 		}
 
 		/// <summary>
@@ -38,8 +36,6 @@ namespace WorldGen
 		public override void Initialize()
 		{
 			// TODO: Add your initialization code here
-			wdgc = new WorldDrawableGameComponent(Game);
-			Game.Components.Add(wdgc);
 
 			base.Initialize();
 		}
@@ -53,27 +49,7 @@ namespace WorldGen
 
 			bounds = new Boundary(0, GraphicsDevice.Viewport.Width, 0, GraphicsDevice.Viewport.Height);
 
-			Random r = new Random();
-			double margin = 0.025;
-
-			double xLeftBound = GraphicsDevice.Viewport.Width * margin;
-			double xRightBound = GraphicsDevice.Viewport.Width - xLeftBound * 2;
-			double yUpBound = GraphicsDevice.Viewport.Height * margin;
-			double yBottomBound = GraphicsDevice.Viewport.Height - yUpBound * 2;
-
-			List<Vertex> points = new List<Vertex>();
-
-			for (int i = 0; i < pointCount; i++)
-			{
-				points.Add(new Vertex(xLeftBound + r.NextDouble() * xRightBound,
-					yUpBound + r.NextDouble() * yBottomBound));
-			}
-
-			vc = new VoronoiCore();
-			Stopwatch sw = Stopwatch.StartNew();
-			vc.compute(points, bounds);
-			sw.Stop();
-			computeTime = sw.Elapsed;
+			generate();
 			
 			base.LoadContent();
 		}
@@ -84,6 +60,11 @@ namespace WorldGen
 		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		public override void Update(GameTime gameTime)
 		{
+			if (Keyboard.GetState().IsKeyDown(Keys.F1) && (lastState.IsKeyUp(Keys.F1) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
+			{
+				generate();
+			}
+
 			if (Keyboard.GetState().IsKeyDown(Keys.LeftControl) && (lastState.IsKeyUp(Keys.LeftControl) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
 			{
 				List<Vertex> points = new List<Vertex>();
@@ -128,13 +109,6 @@ namespace WorldGen
 				vc.compute(points, bounds);
 				sw.Stop();
 				computeTime = sw.Elapsed;
-
-				wdgc.clear();
-			}
-
-			if (Keyboard.GetState().IsKeyDown(Keys.F1) && (lastState.IsKeyUp(Keys.F1) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
-			{
-				wdgc.generate(vc);
 			}
 
 			lastState = Keyboard.GetState();
@@ -189,8 +163,6 @@ namespace WorldGen
 				}
 
 				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Vertex.ToVector2(), size);
-
-				//spriteBatch.DrawString(sFont, cell.VoronoiID.ToString(), cell.Vertex.ToVector2(), color);
 			}
 
 			HelperFunctions.PrimitivesBatch.DrawRectangle(spriteBatch, Color.Red,
@@ -206,6 +178,31 @@ namespace WorldGen
 			spriteBatch.End();
 			
 			base.Draw(gameTime);
+		}
+
+		public void generate()
+		{
+			Random r = new Random();
+			double margin = 0.025;
+
+			double xLeftBound = GraphicsDevice.Viewport.Width * margin;
+			double xRightBound = GraphicsDevice.Viewport.Width - xLeftBound * 2;
+			double yUpBound = GraphicsDevice.Viewport.Height * margin;
+			double yBottomBound = GraphicsDevice.Viewport.Height - yUpBound * 2;
+
+			List<Vertex> points = new List<Vertex>();
+
+			for (int i = 0; i < pointCount; i++)
+			{
+				points.Add(new Vertex(xLeftBound + r.NextDouble() * xRightBound,
+					yUpBound + r.NextDouble() * yBottomBound));
+			}
+
+			vc.reset();
+			Stopwatch sw = Stopwatch.StartNew();
+			vc.compute(points, bounds);
+			sw.Stop();
+			computeTime = sw.Elapsed;
 		}
 	}
 }

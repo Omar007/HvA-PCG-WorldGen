@@ -19,16 +19,6 @@ namespace WorldGen.Voronoi
 		Ocean
 	}
 
-	public class CellElevationLevel
-	{
-		public static readonly float SeaLevel = -1;
-		public static readonly float GroundLevel = 0;
-		public static readonly float Low = 1;
-		public static readonly float Medium = 2;
-		public static readonly float High = 3;
-		public static readonly float Maximum = 4;
-	}
-
 	public class Cell
 	{
 		#region Fields

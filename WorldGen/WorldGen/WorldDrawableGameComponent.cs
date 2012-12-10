@@ -30,10 +30,11 @@ namespace WorldGen
 
 		private Texture2D texture;
 
-		public WorldDrawableGameComponent(Game game)
+		public WorldDrawableGameComponent(Game game, VoronoiCore vc)
 			: base(game)
 		{
-			// TODO: Construct any child components here
+			this.vc = vc;
+			vc.OnVoronoiChanged += () => clear();
 		}
 
 		/// <summary>
@@ -53,7 +54,7 @@ namespace WorldGen
 			sFont = Game.Content.Load<SpriteFont>("Fonts/Arial12");
 
 			landGenerator = new LandGenerator();
-			elevationGenerator = new ElevationGenerator();
+			elevationGenerator = new ElevationGenerator(6, 1);
 
 			base.LoadContent();
 		}
@@ -65,6 +66,11 @@ namespace WorldGen
 		public override void Update(GameTime gameTime)
 		{
 			// TODO: Add your update code here
+			if (Keyboard.GetState().IsKeyDown(Keys.F2) && (lastState.IsKeyUp(Keys.F2) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
+			{
+				generate();
+			}
+
 			if (Keyboard.GetState().IsKeyDown(Keys.C) && lastState.IsKeyUp(Keys.C))
 			{
 				clear();
@@ -111,10 +117,8 @@ namespace WorldGen
 			texture = null;
 		}
 
-		public void generate(VoronoiCore vc)
+		public void generate()
 		{
-			this.vc = vc;
-
 			clear();
 
 			Stopwatch sw = Stopwatch.StartNew();
@@ -153,14 +157,14 @@ namespace WorldGen
 					case CellLandType.Land:
 						color = System.Drawing.Color.SaddleBrown;
 						gotoColor = System.Drawing.Color.SandyBrown;
-						rgbValue = (cell.CellElevationLevel / CellElevationLevel.Maximum);
+						rgbValue = (cell.CellElevationLevel / elevationGenerator.MaxHeight);
 						landCount++;
 						break;
 
 					case CellLandType.Water:
 						color = System.Drawing.Color.Blue;
 						gotoColor = System.Drawing.Color.LightBlue;
-						rgbValue = (cell.CellElevationLevel / CellElevationLevel.Maximum);
+						rgbValue = (cell.CellElevationLevel / elevationGenerator.MaxHeight);
 						waterCount++;
 						break;
 
