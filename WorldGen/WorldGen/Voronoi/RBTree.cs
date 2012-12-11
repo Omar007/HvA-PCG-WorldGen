@@ -129,6 +129,7 @@ namespace WorldGen.Voronoi
 
 						parent.IsRed = false;
 						grandpa.IsRed = true;
+
 						rotateLeft(grandpa);
 					}
 				}
@@ -328,15 +329,13 @@ namespace WorldGen.Voronoi
 			}
 		}
 
-		private void rotateLeft(RBNode node)
+		private void rotate(RBNode node, RBNode q)
 		{
-			RBNode p = node;
-			RBNode q = node.Right;
-			RBNode parent = p.Parent;
+			RBNode parent = node.Parent;
 
 			if (parent != null)
 			{
-				if (parent.Left == p)
+				if (parent.Left == node)
 				{
 					parent.Left = q;
 				}
@@ -351,49 +350,39 @@ namespace WorldGen.Voronoi
 			}
 
 			q.Parent = parent;
-			p.Parent = q;
-			p.Right = q.Left;
+			node.Parent = q;
+		}
 
-			if (p.Right != null)
+		private void rotateLeft(RBNode node)
+		{
+			RBNode q = node.Right;
+
+			rotate(node, q);
+			
+			node.Right = q.Left;
+
+			if (node.Right != null)
 			{
-				p.Right.Parent = p;
+				node.Right.Parent = node;
 			}
 
-			q.Left = p;
+			q.Left = node;
 		}
 
 		private void rotateRight(RBNode node)
 		{
-			RBNode p = node;
 			RBNode q = node.Left;
-			RBNode parent = p.Parent;
 
-			if (parent != null)
+			rotate(node, q);
+			
+			node.Left = q.Right;
+
+			if (node.Left != null)
 			{
-				if (parent.Left == p)
-				{
-					parent.Left = q;
-				}
-				else
-				{
-					parent.Right = q;
-				}
-			}
-			else
-			{
-				root = q;
+				node.Left.Parent = node;
 			}
 
-			q.Parent = parent;
-			p.Parent = q;
-			p.Left = q.Right;
-
-			if (p.Left != null)
-			{
-				p.Left.Parent = p;
-			}
-
-			q.Right = p;
+			q.Right = node;
 		}
 
 		public RBNode getFirst(RBNode node)
