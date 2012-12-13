@@ -25,16 +25,6 @@ namespace WorldGen
 		{
 			get { return voronoiDiagrams; }
 		}
-
-		public int LastLevelPointCount
-		{
-			get { return pointCounts[LastLevel]; }
-		}
-
-		public VoronoiCore LastLevel
-		{
-			get { return voronoiDiagrams[voronoiDiagrams.Count - 1]; }
-		}
 		#endregion
 
 		public VoronoiManager(int width, int height)
@@ -47,15 +37,15 @@ namespace WorldGen
 
 			VoronoiCore vc0 = new VoronoiCore();
 			voronoiDiagrams.Add(vc0);
-			pointCounts.Add(vc0, 10);
+			pointCounts.Add(vc0, 100);
 
 			VoronoiCore vc1 = new VoronoiCore();
 			voronoiDiagrams.Add(vc1);
-			pointCounts.Add(vc1, 100);
+			pointCounts.Add(vc1, 1000);
 
 			VoronoiCore vc2 = new VoronoiCore();
 			voronoiDiagrams.Add(vc2);
-			pointCounts.Add(vc2, 1000);
+			pointCounts.Add(vc2, 10000);
 		}
 
 		private void compute(VoronoiCore vc, List<Vertex> points)
@@ -149,6 +139,11 @@ namespace WorldGen
 		public TimeSpan timeFor(VoronoiCore vc)
 		{
 			return computeTimes[vc];
+		}
+
+		public int pointCountFor(VoronoiCore vc)
+		{
+			return pointCounts[vc];
 		}
 	}
 }

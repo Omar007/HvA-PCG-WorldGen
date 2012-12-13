@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace WorldGen.Voronoi
 {
@@ -120,6 +121,28 @@ namespace WorldGen.Voronoi
 			halfEdges.Sort();
 
 			return halfEdges.Count;
+		}
+
+		public bool IsVertexInCell(Vertex vertex)
+		{
+			List<double> coefficients = CellPoints.Skip(1).Select((p, i) =>
+				(vertex.Y - CellPoints[i].Y) * (p.X - CellPoints[i].X)
+				- (vertex.X - CellPoints[i].X) * (p.Y - CellPoints[i].Y)).ToList();
+
+			if (coefficients.Any(p => p == 0))
+			{
+				return true;
+			}
+
+			for (int i = 1; i < coefficients.Count(); i++)
+			{
+				if (coefficients[i] * coefficients[i - 1] < 0)
+				{
+					return false;
+				}
+			}
+
+			return true;
 		}
 	}
 }

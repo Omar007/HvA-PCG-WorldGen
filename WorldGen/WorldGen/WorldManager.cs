@@ -11,7 +11,8 @@ namespace WorldGen
 		#region Fields
 		private List<VoronoiCore> voronoiDiagrams;
 
-		private CellGrouper cg;
+		private TimeSpan groupCellsComputeTime;
+		private GroupedCell gc;
 
 		private TimeSpan landComputeTime;
 		private LandGenerator landGenerator;
@@ -51,7 +52,15 @@ namespace WorldGen
 		{
 			this.voronoiDiagrams = voronoiDiagrams;
 
-			cg = CellGrouper.GroupCells(voronoiDiagrams);
+			Stopwatch sw = Stopwatch.StartNew();
+			gc = GroupedCell.groupCells(voronoiDiagrams);
+			sw.Stop();
+			groupCellsComputeTime = sw.Elapsed;
+
+			//sw.Restart();
+			//GroupedCell gcOld = GroupedCell.groupCells_OLD(voronoiDiagrams);
+			//sw.Stop();
+			//TimeSpan groupCellsOldComputeTime = sw.Elapsed;
 
 			landGenerator = new LandGenerator();
 			elevationGenerator = new ElevationGenerator(6, 2);
@@ -60,7 +69,7 @@ namespace WorldGen
 		public void generate()
 		{
 			Stopwatch sw = Stopwatch.StartNew();
-			landGenerator.generate(cg, DeepestVoronoi);
+			landGenerator.generate(gc, DeepestVoronoi);
 			sw.Stop();
 			landComputeTime = sw.Elapsed;
 

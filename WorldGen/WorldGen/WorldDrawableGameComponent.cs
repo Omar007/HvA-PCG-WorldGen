@@ -95,15 +95,17 @@ namespace WorldGen
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
-				//HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Black, cell.Vertex.ToVector2(), 5);
+				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, cell.Vertex.ToVector2(), 3);
 				//spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2(), Color.Black);
 			}
 
-			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), new Vector2(0, 100), Color.Brown);
-			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 120), Color.Brown);
+			HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, new Color(0, 0, 0, 192), new Vector2(100, 100), 200);
 
-			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 140), Color.Brown);
-			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 160), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), Vector2.Zero, Color.Brown);
+			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 20), Color.Brown);
+
+			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 40), Color.Brown);
+			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 60), Color.Brown);
 
 			spriteBatch.End();
 

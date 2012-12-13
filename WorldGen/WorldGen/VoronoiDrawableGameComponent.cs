@@ -108,43 +108,43 @@ namespace WorldGen
 			foreach (Cell cell in vManager.VoronoiDiagrams[drawIndex].Cells)
 			{
 				Color color = Color.Yellow;
-				int size = 4;
+				int size = 3;
 
 				switch (cell.CellEdgeType)
 				{
 					case CellEdgeType.WestEdge:
 						color = Color.Red;
-						size = 6;
+						size = 5;
 						break;
 
 					case CellEdgeType.EastEdge:
 						color = Color.Red;
-						size = 6;
+						size = 5;
 						break;
 
 					case CellEdgeType.NorthEdge:
 						color = Color.White;
-						size = 6;
+						size = 5;
 						break;
 
 					case CellEdgeType.SouthEdge:
 						color = Color.White;
-						size = 6;
+						size = 5;
 						break;
 				}
 
 				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Vertex.ToVector2(), size);
 			}
 
-			spriteBatch.DrawString(sFont, vManager.timeFor(vManager.VoronoiDiagrams[drawIndex]).ToString(), Vector2.Zero, Color.Brown);
-
 			HelperFunctions.PrimitivesBatch.DrawRectangle(spriteBatch, Color.Red,
 				new Rectangle(vManager.Bounds.Left, vManager.Bounds.Top,
 					(vManager.Bounds.Right - vManager.Bounds.Left), (vManager.Bounds.Bottom - vManager.Bounds.Top)));
 
-			spriteBatch.DrawString(sFont, "Points: " + vManager.LastLevelPointCount.ToString(), new Vector2(0, 20), Color.Brown);
-			spriteBatch.DrawString(sFont, "Cells: " + vManager.LastLevel.Cells.Count.ToString(), new Vector2(0, 40), Color.Brown);
-			spriteBatch.DrawString(sFont, "Edges: " + vManager.LastLevel.Edges.Count.ToString(), new Vector2(0, 60), Color.Brown);
+			HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, new Color(0, 0, 0, 192), new Vector2(100, 100), 200);
+			spriteBatch.DrawString(sFont, vManager.timeFor(vManager.VoronoiDiagrams[drawIndex]).ToString(), Vector2.Zero, Color.Brown);
+			spriteBatch.DrawString(sFont, "Points: " + vManager.pointCountFor(vManager.VoronoiDiagrams[drawIndex]).ToString(), new Vector2(0, 20), Color.Brown);
+			spriteBatch.DrawString(sFont, "Cells: " + vManager.VoronoiDiagrams[drawIndex].Cells.Count.ToString(), new Vector2(0, 40), Color.Brown);
+			spriteBatch.DrawString(sFont, "Edges: " + vManager.VoronoiDiagrams[drawIndex].Edges.Count.ToString(), new Vector2(0, 60), Color.Brown);
 			spriteBatch.DrawString(sFont, "Delauny Edges: " + delaunyEdgeCount.ToString(), new Vector2(0, 80), Color.Brown);
 
 			spriteBatch.End();

@@ -74,7 +74,7 @@
     <Reference Include="System.Net" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CellGrouper.cs" />
+    <Compile Include="GroupedCell.cs" />
     <Compile Include="HelperFunctions\ColorHelpers.cs" />
     <Compile Include="HelperFunctions\PrimitivesBatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

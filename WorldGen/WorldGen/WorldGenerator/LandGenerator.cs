@@ -64,18 +64,18 @@ namespace WorldGen.WorldGenerator
 			}
 		}
 
-		private void reset(CellGrouper cg)
+		private void reset(GroupedCell gc)
 		{
-			for (int i = 0; i < cg.Count; i++)
+			for (int i = 0; i < gc.Count; i++)
 			{
-				CellGrouper child = cg[i];
+				GroupedCell child = gc[i];
 
 				resetAsLandMinimum = RESET_AS_LAND_MIN;
 				changeToLandThreshold = CHANGE_TO_LAND_THRESHOLD;
 
-				if (cg.Current != null)
+				if (gc.Current != null)
 				{
-					switch (cg.Current.CellLandType)
+					switch (gc.Current.CellLandType)
 					{
 						case CellLandType.Land:
 							resetAsLandMinimum = 0.2;
@@ -109,12 +109,12 @@ namespace WorldGen.WorldGenerator
 			}
 		}
 
-		public void generate(CellGrouper cg, VoronoiCore vc)
+		public void generate(GroupedCell gc, VoronoiCore vc)
 		{
-			if (cg != null)
+			if (gc != null)
 			{
-				reset(cg);
-				generate(cg);
+				reset(gc);
+				generate(gc);
 			}
 
 			if (vc != null)
@@ -123,15 +123,15 @@ namespace WorldGen.WorldGenerator
 			}
 		}
 
-		private void generate(CellGrouper cg)
+		private void generate(GroupedCell gc)
 		{
-			for (int i = 0; i < cg.Count; i++)
+			for (int i = 0; i < gc.Count; i++)
 			{
-				CellGrouper child = cg[i];
+				GroupedCell child = gc[i];
 
-				if (cg.Current != null)
+				if (gc.Current != null)
 				{
-					reset(cg);
+					reset(gc);
 				}
 
 				if (child.Current.CellLandType == CellLandType.Water)
