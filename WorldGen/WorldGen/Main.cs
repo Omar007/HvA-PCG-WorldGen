@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using WorldGen.Voronoi;
 
 namespace WorldGen
 {
@@ -11,8 +10,6 @@ namespace WorldGen
 	public class Main : Microsoft.Xna.Framework.Game
 	{
 		private GraphicsDeviceManager graphics;
-
-		private VoronoiCore vc;
 
 		public Main()
 		{
@@ -37,9 +34,10 @@ namespace WorldGen
 
 			HelperFunctions.PrimitivesBatch.Init(GraphicsDevice);
 
-			vc = new VoronoiCore();
-			Components.Add(new VoronoiDrawableGameComponent(this, vc));
-			Components.Add(new WorldDrawableGameComponent(this, vc));
+			VoronoiDrawableGameComponent vdgc = new VoronoiDrawableGameComponent(this);
+			Components.Add(vdgc);
+
+			Components.Add(new WorldDrawableGameComponent(this, vdgc.VoronoiManager));
 
 			base.Initialize();
 		}

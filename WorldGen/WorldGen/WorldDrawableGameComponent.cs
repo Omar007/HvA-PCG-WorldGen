@@ -1,11 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Diagnostics;
 using WorldGen.HelperFunctions;
 using WorldGen.Voronoi;
-using WorldGen.WorldGenerator;
 
 namespace WorldGen
 {
@@ -19,22 +16,20 @@ namespace WorldGen
 
 		private KeyboardState lastState;
 
-		private TimeSpan landComputeTime;
-		private TimeSpan elevationComputeTime;
+		private Texture2D texture;
 
-		private VoronoiCore vc;
-		private LandGenerator landGenerator;
-		private ElevationGenerator elevationGenerator;
+		private VoronoiManager voronoiManager;
+		private WorldManager wm;
+
 		private int landCount;
 		private int waterCount;
 
-		private Texture2D texture;
+		private int drawIndex = 0;
 
-		public WorldDrawableGameComponent(Game game, VoronoiCore vc)
+		public WorldDrawableGameComponent(Game game, VoronoiManager voronoiManager)
 			: base(game)
 		{
-			this.vc = vc;
-			vc.OnVoronoiChanged += () => clear();
+			this.voronoiManager = voronoiManager;
 		}
 
 		/// <summary>
@@ -52,9 +47,6 @@ namespace WorldGen
 		{
 			spriteBatch = new SpriteBatch(GraphicsDevice);
 			sFont = Game.Content.Load<SpriteFont>("Fonts/Arial12");
-
-			landGenerator = new LandGenerator();
-			elevationGenerator = new ElevationGenerator(6, 1);
 
 			base.LoadContent();
 		}
@@ -76,6 +68,15 @@ namespace WorldGen
 				clear();
 			}
 
+			if (Keyboard.GetState().IsKeyDown(Keys.OemPlus) && lastState.IsKeyUp(Keys.OemPlus))
+			{
+				if (wm != null && wm.VoronoiDiagrams != null)
+				{
+					drawIndex = (drawIndex + 1) % wm.VoronoiDiagrams.Count;
+					createTexture();
+				}
+			}
+
 			lastState = Keyboard.GetState();
 
 			base.Update(gameTime);
@@ -92,14 +93,14 @@ namespace WorldGen
 
 			spriteBatch.Draw(texture, Vector2.Zero, Color.White);
 
-			foreach (Cell cell in vc.Cells)
+			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
-				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Black, cell.Vertex.ToVector2(), 5);
-				spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2(), Color.Black);
+				//HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Black, cell.Vertex.ToVector2(), 5);
+				//spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2(), Color.Black);
 			}
 
-			spriteBatch.DrawString(sFont, landComputeTime.ToString(), new Vector2(0, 100), Color.Brown);
-			spriteBatch.DrawString(sFont, elevationComputeTime.ToString(), new Vector2(0, 120), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), new Vector2(0, 100), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 120), Color.Brown);
 
 			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 140), Color.Brown);
 			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 160), Color.Brown);
@@ -117,25 +118,24 @@ namespace WorldGen
 			texture = null;
 		}
 
-		public void generate()
+		private void generate()
 		{
 			clear();
 
-			Stopwatch sw = Stopwatch.StartNew();
-			landGenerator.generate(vc, true);
-			sw.Stop();
-			landComputeTime = sw.Elapsed;
+			wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+			wm.generate();
+			drawIndex = wm.VoronoiDiagrams.Count - 1;
 
-			sw.Restart();
-			elevationGenerator.generate(vc, true);
-			sw.Stop();
-			elevationComputeTime = sw.Elapsed;
+			createTexture();
+		}
 
+		private void createTexture()
+		{
 			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
 			graphics.Clear(System.Drawing.Color.Transparent);
 
-			foreach (Cell cell in vc.Cells)
+			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
 				System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
 				foreach (HalfEdge he in cell.HalfEdges)
@@ -157,14 +157,14 @@ namespace WorldGen
 					case CellLandType.Land:
 						color = System.Drawing.Color.SaddleBrown;
 						gotoColor = System.Drawing.Color.SandyBrown;
-						rgbValue = (cell.CellElevationLevel / elevationGenerator.MaxHeight);
+						rgbValue = (cell.CellElevationLevel / wm.MaxHeight);
 						landCount++;
 						break;
 
 					case CellLandType.Water:
 						color = System.Drawing.Color.Blue;
 						gotoColor = System.Drawing.Color.LightBlue;
-						rgbValue = (cell.CellElevationLevel / elevationGenerator.MaxHeight);
+						rgbValue = (cell.CellElevationLevel / wm.MaxHeight);
 						waterCount++;
 						break;
 

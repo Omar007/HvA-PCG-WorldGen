@@ -1,9 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using WorldGen.Voronoi;
 
 namespace WorldGen
@@ -17,16 +14,23 @@ namespace WorldGen
 		private SpriteFont sFont;
 
 		private KeyboardState lastState;
-		private TimeSpan computeTime;
 
-		private const int pointCount = 1000;
-		private Boundary bounds;
-		private VoronoiCore vc;
+		private VoronoiManager vManager;
 
-		public VoronoiDrawableGameComponent(Game game, VoronoiCore vc)
+		private int drawIndex = 0;
+
+		public VoronoiManager VoronoiManager
+		{
+			get { return vManager; }
+		}
+
+		public VoronoiDrawableGameComponent(Game game)
 			: base(game)
 		{
-			this.vc = vc;
+			vManager = new VoronoiManager(1280, 720);
+			vManager.generate();
+
+			drawIndex = vManager.VoronoiDiagrams.Count - 1;
 		}
 
 		/// <summary>
@@ -46,10 +50,6 @@ namespace WorldGen
 			sFont = Game.Content.Load<SpriteFont>("Fonts/Arial12");
 
 			HelperFunctions.PrimitivesBatch.Init(GraphicsDevice);
-
-			bounds = new Boundary(0, GraphicsDevice.Viewport.Width, 0, GraphicsDevice.Viewport.Height);
-
-			generate();
 			
 			base.LoadContent();
 		}
@@ -62,53 +62,24 @@ namespace WorldGen
 		{
 			if (Keyboard.GetState().IsKeyDown(Keys.F1) && (lastState.IsKeyUp(Keys.F1) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
 			{
-				generate();
+				vManager.generate();
+				((WorldDrawableGameComponent)Game.Components[1]).clear();
+
+				drawIndex = vManager.VoronoiDiagrams.Count - 1;
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.LeftControl) && (lastState.IsKeyUp(Keys.LeftControl) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
 			{
-				List<Vertex> points = new List<Vertex>();
+				vManager.relax();
+				((WorldDrawableGameComponent)Game.Components[1]).clear();
+			}
 
-				foreach (Cell cell in vc.Cells)
+			if (Keyboard.GetState().IsKeyDown(Keys.OemPlus) && lastState.IsKeyUp(Keys.OemPlus))
+			{
+				if (vManager != null && vManager.VoronoiDiagrams != null)
 				{
-					List<Vertex> avrg = new List<Vertex>();
-
-					foreach (HalfEdge hEdge in cell.HalfEdges)
-					{
-						Vertex va = hEdge.StartPoint;
-						Vertex vb = hEdge.EndPoint;
-
-						if (va != null && !avrg.Contains(va))
-						{
-							avrg.Add(va);
-						}
-
-						if (vb != null && !avrg.Contains(vb))
-						{
-							avrg.Add(vb);
-						}
-					}
-
-					double xAvrg = 0;
-					double yAvrg = 0;
-
-					foreach (Vertex v in avrg)
-					{
-						xAvrg += v.X;
-						yAvrg += v.Y;
-					}
-
-					xAvrg /= avrg.Count;
-					yAvrg /= avrg.Count;
-
-					points.Add(new Vertex(xAvrg, yAvrg));
+					drawIndex = (drawIndex + 1) % vManager.VoronoiDiagrams.Count;
 				}
-
-				vc.reset();
-				Stopwatch sw = Stopwatch.StartNew();
-				vc.compute(points, bounds);
-				sw.Stop();
-				computeTime = sw.Elapsed;
 			}
 
 			lastState = Keyboard.GetState();
@@ -122,7 +93,7 @@ namespace WorldGen
 
 			int delaunyEdgeCount = 0;
 
-			foreach (Edge edge in vc.Edges)
+			foreach (Edge edge in vManager.VoronoiDiagrams[drawIndex].Edges)
 			{
 				HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, edge.VertexA.ToVector2(), edge.VertexB.ToVector2());
 
@@ -134,7 +105,7 @@ namespace WorldGen
 				}
 			}
 
-			foreach (Cell cell in vc.Cells)
+			foreach (Cell cell in vManager.VoronoiDiagrams[drawIndex].Cells)
 			{
 				Color color = Color.Yellow;
 				int size = 4;
@@ -150,7 +121,7 @@ namespace WorldGen
 						color = Color.Red;
 						size = 6;
 						break;
-						
+
 					case CellEdgeType.NorthEdge:
 						color = Color.White;
 						size = 6;
@@ -165,44 +136,20 @@ namespace WorldGen
 				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, color, cell.Vertex.ToVector2(), size);
 			}
 
+			spriteBatch.DrawString(sFont, vManager.timeFor(vManager.VoronoiDiagrams[drawIndex]).ToString(), Vector2.Zero, Color.Brown);
+
 			HelperFunctions.PrimitivesBatch.DrawRectangle(spriteBatch, Color.Red,
-				new Rectangle((int)bounds.Left, (int)bounds.Top, (int)(bounds.Right - bounds.Left), (int)(bounds.Bottom - bounds.Top)));
+				new Rectangle(vManager.Bounds.Left, vManager.Bounds.Top,
+					(vManager.Bounds.Right - vManager.Bounds.Left), (vManager.Bounds.Bottom - vManager.Bounds.Top)));
 
-			spriteBatch.DrawString(sFont, computeTime.ToString(), Vector2.Zero, Color.Brown);
-
-			spriteBatch.DrawString(sFont, "Points: " + pointCount.ToString(), new Vector2(0, 20), Color.Brown);
-			spriteBatch.DrawString(sFont, "Cells: " + vc.Cells.Count.ToString(), new Vector2(0, 40), Color.Brown);
-			spriteBatch.DrawString(sFont, "Edges: " + vc.Edges.Count.ToString(), new Vector2(0, 60), Color.Brown);
+			spriteBatch.DrawString(sFont, "Points: " + vManager.LastLevelPointCount.ToString(), new Vector2(0, 20), Color.Brown);
+			spriteBatch.DrawString(sFont, "Cells: " + vManager.LastLevel.Cells.Count.ToString(), new Vector2(0, 40), Color.Brown);
+			spriteBatch.DrawString(sFont, "Edges: " + vManager.LastLevel.Edges.Count.ToString(), new Vector2(0, 60), Color.Brown);
 			spriteBatch.DrawString(sFont, "Delauny Edges: " + delaunyEdgeCount.ToString(), new Vector2(0, 80), Color.Brown);
 
 			spriteBatch.End();
-			
+
 			base.Draw(gameTime);
-		}
-
-		public void generate()
-		{
-			Random r = new Random();
-			double margin = 0.025;
-
-			double xLeftBound = GraphicsDevice.Viewport.Width * margin;
-			double xRightBound = GraphicsDevice.Viewport.Width - xLeftBound * 2;
-			double yUpBound = GraphicsDevice.Viewport.Height * margin;
-			double yBottomBound = GraphicsDevice.Viewport.Height - yUpBound * 2;
-
-			List<Vertex> points = new List<Vertex>();
-
-			for (int i = 0; i < pointCount; i++)
-			{
-				points.Add(new Vertex(xLeftBound + r.NextDouble() * xRightBound,
-					yUpBound + r.NextDouble() * yBottomBound));
-			}
-
-			vc.reset();
-			Stopwatch sw = Stopwatch.StartNew();
-			vc.compute(points, bounds);
-			sw.Stop();
-			computeTime = sw.Elapsed;
 		}
 	}
 }

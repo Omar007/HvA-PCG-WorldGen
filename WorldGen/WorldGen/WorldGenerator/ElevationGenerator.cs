@@ -3,11 +3,13 @@ using WorldGen.Voronoi;
 
 namespace WorldGen.WorldGenerator
 {
-	public class ElevationGenerator : WorldGenerator
+	public class ElevationGenerator
 	{
 		#region Fields
 		private const float SeaLevel = -1;
 		private const float GroundLevel = 0;
+
+		private Random random;
 
 		private float maxHeight;
 
@@ -26,17 +28,13 @@ namespace WorldGen.WorldGenerator
 		{
 			this.maxHeight = maxHeight;
 			this.maxDeviation = maxDeviation;
+
+			random = new Random();
 		}
 
-		private void setLandElevation(Cell cell)
+		private void setElevation(Cell cell)
 		{
-			if (cell.CellLandType != CellLandType.Land)
-			{
-				return;
-			}
-
-			float averageHeight = 0;
-			int averageParticipants = 0;
+			float lowestNeighbour = maxHeight;
 
 			foreach (HalfEdge halfEdge in cell.HalfEdges)
 			{
@@ -46,54 +44,26 @@ namespace WorldGen.WorldGenerator
 				{
 					if (otherCell.CellLandType == CellLandType.Ocean)
 					{
-						cell.CellElevationLevel = (float)Math.Round(Random.NextDouble() * maxDeviation);
+						cell.CellElevationLevel = (float)Math.Round(random.NextDouble() * maxDeviation);
 						return;
 					}
-					else
+					else if (otherCell.CellElevationLevel < lowestNeighbour)
 					{
-						if (otherCell.CellLandType == CellLandType.Land)
-						{
-							averageHeight += cell.CellElevationLevel;
-						}
-						averageParticipants++;
+						lowestNeighbour = otherCell.CellElevationLevel;
 					}
 				}
 			}
 
-			if (averageParticipants > 0)
+			float deviation = Math.Abs(cell.CellElevationLevel - lowestNeighbour);
+
+			if(deviation < maxDeviation)
 			{
-				averageHeight /= averageParticipants;
-
-				double heightRandom = Random.NextDouble() * maxDeviation;
-
-				if (averageHeight - maxDeviation >= 0)
-				{
-					averageHeight -= maxDeviation;
-					heightRandom *= 2;
-				}
-
-				if (averageHeight + heightRandom > maxHeight)
-				{
-					cell.CellElevationLevel = maxHeight;
-				}
-				else
-				{
-					cell.CellElevationLevel = (float)Math.Round(averageHeight + heightRandom);
-				}
-			}
-			else
-			{
-				cell.CellElevationLevel = (float)Math.Round(Random.NextDouble() * maxDeviation);
+				cell.CellElevationLevel += (float)Math.Round(random.NextDouble() * (maxDeviation - deviation));
 			}
 		}
 
-		private void setWaterElevation(Cell cell, ref float lowestLand)
+		private void correctWater(Cell cell, ref float lowestLand)
 		{
-			if (cell.CellLandType != CellLandType.Water)
-			{
-				return;
-			}
-
 			foreach (HalfEdge halfEdge in cell.HalfEdges)
 			{
 				Cell otherCell = halfEdge.NeighbourCell;
@@ -107,14 +77,22 @@ namespace WorldGen.WorldGenerator
 					}
 					else if (otherCell.CellLandType == CellLandType.Water)
 					{
-						lowestLand = otherCell.CellElevationLevel;
-						cell.CellElevationLevel = lowestLand;
+						if (otherCell.CellElevationLevel > lowestLand)
+						{
+							otherCell.CellElevationLevel = lowestLand;
+							correctWater(otherCell, ref lowestLand);
+						}
+						else
+						{
+							lowestLand = otherCell.CellElevationLevel;
+							cell.CellElevationLevel = lowestLand;
+						}
 					}
 				}
 			}
 		}
 
-		protected override void reset(VoronoiCore vc)
+		private void reset(VoronoiCore vc)
 		{
 			foreach (Cell cell in vc.Cells)
 			{
@@ -135,24 +113,30 @@ namespace WorldGen.WorldGenerator
 			}
 		}
 
-		protected override void generate(VoronoiCore vc)
+		public void generate(VoronoiCore vc)
 		{
-			float lowestLand = float.MaxValue;
+			reset(vc);
 
 			for (int i = 0; i <= maxHeight; i++)
 			{
 				foreach (Cell cell in vc.Cells)
 				{
-					if (cell.CellLandType == CellLandType.Land)
+					if (cell.CellLandType != CellLandType.Ocean)
 					{
-						setLandElevation(cell);
+						setElevation(cell);
 					}
-					else if (cell.CellLandType == CellLandType.Water)
-					{
-						lowestLand = maxHeight;
-						setWaterElevation(cell, ref lowestLand);
-						cell.CellElevationLevel = lowestLand;
-					}
+				}
+			}
+
+			float lowestLand = float.MaxValue;
+
+			foreach (Cell cell in vc.Cells)
+			{
+				if (cell.CellLandType == CellLandType.Water)
+				{
+					lowestLand = maxHeight;
+					correctWater(cell, ref lowestLand);
+					cell.CellElevationLevel = lowestLand;
 				}
 			}
 		}

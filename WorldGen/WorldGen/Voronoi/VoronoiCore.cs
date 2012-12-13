@@ -37,11 +37,6 @@ namespace WorldGen.Voronoi
 		}
 		#endregion
 
-		#region Events
-		public delegate void VoronoiChangedEventHandler();
-		public event VoronoiChangedEventHandler OnVoronoiChanged;
-		#endregion
-
 		public VoronoiCore()
 		{
 			beachLine = new RBTree();
@@ -969,8 +964,6 @@ namespace WorldGen.Voronoi
 			clipEdges(bounds);
 
 			closeCells(bounds);
-
-			OnVoronoiChanged();
 		}
 	}
 }

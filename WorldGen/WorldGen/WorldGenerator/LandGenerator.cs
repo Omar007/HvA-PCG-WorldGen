@@ -3,16 +3,25 @@ using WorldGen.Voronoi;
 
 namespace WorldGen.WorldGenerator
 {
-	public class LandGenerator : WorldGenerator
+	public class LandGenerator
 	{
+		private const double RESET_AS_LAND_MIN = 0.6;
+		private const double CHANGE_TO_LAND_THRESHOLD = 0.5;
+
+		private Random random;
+
+		private double resetAsLandMinimum = RESET_AS_LAND_MIN;
+		private double changeToLandThreshold = CHANGE_TO_LAND_THRESHOLD;
+
 		public LandGenerator()
 			: base()
 		{
+			random = new Random();
 		}
 
 		private void setLandCells(Cell cell)
 		{
-			double halfLandMark = cell.HalfEdges.Count * 0.5;
+			double becomesLandMark = cell.HalfEdges.Count * changeToLandThreshold;
 			int landNeighbourCount = 0;
 
 			foreach (HalfEdge halfEdge in cell.HalfEdges)
@@ -23,16 +32,21 @@ namespace WorldGen.WorldGenerator
 				{
 					landNeighbourCount++;
 
-					if (landNeighbourCount > halfLandMark) //Surrounded by land for more than 50%; make myself land.
+					if (landNeighbourCount > becomesLandMark) //Surrounded by land for more than the marked value; make myself land.
 					{
 						cell.CellLandType = CellLandType.Land;
 
-						if (otherCell.CellLandType != CellLandType.Land)
-						{
-							setLandCells(otherCell);
-						}
+						//if (otherCell.CellLandType != CellLandType.Land)
+						//{
+						//	setLandCells(otherCell);
+						//}
 					}
 				}
+			}
+
+			if (landNeighbourCount > becomesLandMark) //Surrounded by land for more than the marked value; make myself land.
+			{
+				cell.CellLandType = CellLandType.Land;
 			}
 		}
 
@@ -50,35 +64,87 @@ namespace WorldGen.WorldGenerator
 			}
 		}
 
-		protected override void reset(VoronoiCore vc)
+		private void reset(CellGrouper cg)
 		{
-			foreach (Cell cell in vc.Cells)
+			for (int i = 0; i < cg.Count; i++)
 			{
-				if (cell.CellEdgeType == CellEdgeType.NoEdge && Random.NextDouble() > 0.6) //Not a cell on the edge of the map and land 'threshold' reached.
+				CellGrouper child = cg[i];
+
+				resetAsLandMinimum = RESET_AS_LAND_MIN;
+				changeToLandThreshold = CHANGE_TO_LAND_THRESHOLD;
+
+				if (cg.Current != null)
 				{
-					cell.CellLandType = CellLandType.Land;
+					switch (cg.Current.CellLandType)
+					{
+						case CellLandType.Land:
+							resetAsLandMinimum = 0.2;
+							changeToLandThreshold = 0.1;
+							break;
+
+						case CellLandType.Water:
+							resetAsLandMinimum = 0.7;
+							changeToLandThreshold = 0.6;
+							break;
+
+						case CellLandType.Ocean:
+							resetAsLandMinimum = 0.85;
+							changeToLandThreshold = 0.75;
+							break;
+					}
 				}
-				else if (cell.CellEdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map
+
+				if (child.Current.CellEdgeType == CellEdgeType.NoEdge && random.NextDouble() > resetAsLandMinimum) //Not a cell on the edge of the map and land 'threshold' reached.
 				{
-					cell.CellLandType = CellLandType.Ocean;
+					child.Current.CellLandType = CellLandType.Land;
+				}
+				else if (child.Current.CellEdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map
+				{
+					child.Current.CellLandType = CellLandType.Ocean;
 				}
 				else //Everything else is water
 				{
-					cell.CellLandType = CellLandType.Water;
+					child.Current.CellLandType = CellLandType.Water;
 				}
 			}
 		}
 
-		protected override void generate(VoronoiCore vc)
+		public void generate(CellGrouper cg, VoronoiCore vc)
 		{
-			foreach (Cell cell in vc.Cells)
+			if (cg != null)
 			{
-				if (cell.CellEdgeType == CellEdgeType.NoEdge && cell.CellLandType != CellLandType.Land)
-				{
-					setLandCells(cell);
-				}
+				reset(cg);
+				generate(cg);
 			}
 
+			if (vc != null)
+			{
+				correctOceans(vc);
+			}
+		}
+
+		private void generate(CellGrouper cg)
+		{
+			for (int i = 0; i < cg.Count; i++)
+			{
+				CellGrouper child = cg[i];
+
+				if (cg.Current != null)
+				{
+					reset(cg);
+				}
+
+				if (child.Current.CellLandType == CellLandType.Water)
+				{
+					setLandCells(child.Current);
+				}
+
+				generate(child, null);
+			}
+		}
+
+		private void correctOceans(VoronoiCore vc)
+		{
 			foreach (Cell cell in vc.Cells)
 			{
 				if (cell.CellLandType == CellLandType.Ocean)

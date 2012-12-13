@@ -25,6 +25,7 @@ namespace WorldGen.Voronoi
 		private Vertex vertex;
 
 		private List<HalfEdge> halfEdges;
+		private List<Vertex> cellPoints;
 
 		private CellEdgeType cellEdgeType;
 		private CellLandType cellLandType;
@@ -50,6 +51,22 @@ namespace WorldGen.Voronoi
 		public List<HalfEdge> HalfEdges
 		{
 			get { return halfEdges; }
+		}
+
+		public List<Vertex> CellPoints
+		{
+			get
+			{
+				if (cellPoints.Count != halfEdges.Count)
+				{
+					cellPoints.Clear();
+					foreach (HalfEdge edge in halfEdges)
+					{
+						cellPoints.Add(edge.StartPoint);
+					}
+				}
+				return cellPoints;
+			}
 		}
 
 		public CellEdgeType CellEdgeType
@@ -81,6 +98,7 @@ namespace WorldGen.Voronoi
 			this.vertex = v;
 
 			halfEdges = new List<HalfEdge>();
+			cellPoints = new List<Vertex>();
 
 			cellEdgeType = CellEdgeType.NoEdge;
 			cellLandType = CellLandType.Undefined;
@@ -89,15 +107,13 @@ namespace WorldGen.Voronoi
 
 		public int prepare()
 		{
-			int iHalfEdge = halfEdges.Count;
-
-			while (iHalfEdge-- > 0)
+			for (int i = halfEdges.Count - 1; i >= 0; i--)
 			{
-				HalfEdge edge = halfEdges[iHalfEdge];
+				HalfEdge edge = halfEdges[i];
 
 				if (edge.StartPoint == null || edge.EndPoint == null)
 				{
-					halfEdges.RemoveAt(iHalfEdge);
+					halfEdges.RemoveAt(i);
 				}
 			}
 

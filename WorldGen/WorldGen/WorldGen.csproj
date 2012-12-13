@@ -74,12 +74,14 @@
     <Reference Include="System.Net" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CellGrouper.cs" />
     <Compile Include="HelperFunctions\ColorHelpers.cs" />
     <Compile Include="HelperFunctions\PrimitivesBatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="VoronoiDrawableGameComponent.cs" />
+    <Compile Include="VoronoiManager.cs" />
     <Compile Include="Voronoi\BeachSection.cs" />
     <Compile Include="Voronoi\Boundary.cs" />
     <Compile Include="Voronoi\Cell.cs" />
@@ -93,7 +95,7 @@
     <Compile Include="WorldDrawableGameComponent.cs" />
     <Compile Include="WorldGenerator\ElevationGenerator.cs" />
     <Compile Include="WorldGenerator\LandGenerator.cs" />
-    <Compile Include="WorldGenerator\WorldGenerator.cs" />
+    <Compile Include="WorldManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Game.ico" />
