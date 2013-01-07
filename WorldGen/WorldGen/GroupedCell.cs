@@ -6,35 +6,31 @@ namespace WorldGen
 	public class GroupedCell
 	{
 		#region Static
-		#region NEW - Stores all Voronoi Cells on LinkedLists and uses that list to keep track of unsorted cells. HUGE speed improvement!
 		public static GroupedCell groupCells(List<VoronoiCore> voronoiDiagrams)
 		{
-			List<LinkedList<Cell>> ungroupedCells = new List<LinkedList<Cell>>();
+			List<List<Cell>> ungroupedCells = new List<List<Cell>>();
 
 			foreach (VoronoiCore vc in voronoiDiagrams)
 			{
-				ungroupedCells.Add(new LinkedList<Cell>(vc.Cells));
+				ungroupedCells.Add(new List<Cell>(vc.Cells));
 			}
 
-			GroupedCell gc = new GroupedCell(null);
+			GroupedCell rootGC = new GroupedCell(null);
 
-			groupCells(gc, ungroupedCells, 0);
+			groupCells(rootGC, ungroupedCells, 0);
 
-			return gc;
+			return rootGC;
 		}
 
-		private static void groupCells(GroupedCell gc, List<LinkedList<Cell>> ungroupedCells, int index)
+		private static void groupCells(GroupedCell gc, List<List<Cell>> ungroupedCells, int index)
 		{
-			LinkedListNode<Cell> currentNode = ungroupedCells[index].First;
-
-			while (currentNode != null)
+			for (int i = ungroupedCells[index].Count - 1; i >= 0; i--)
 			{
-				Cell cell = currentNode.Value;
-				currentNode = currentNode.Next;
+				Cell cell = ungroupedCells[index][i];
 
-				if (gc.Current == null || gc.Current.IsVertexInCell(cell.Vertex))
+				if (gc.Cell == null || gc.Cell.ContainsVertex(cell.Vertex))
 				{
-					ungroupedCells[index].Remove(cell);
+					ungroupedCells[index].RemoveAt(i);
 
 					GroupedCell child = new GroupedCell(cell);
 					gc.AddChild(child);
@@ -48,44 +44,21 @@ namespace WorldGen
 		}
 		#endregion
 
-		#region OLD - Loops through all cells all the time, even already grouped ones.
-		public static GroupedCell groupCells_OLD(List<VoronoiCore> voronoiDiagrams)
-		{
-			GroupedCell gc = new GroupedCell(null);
-
-			groupCells_OLD(gc, voronoiDiagrams, 0);
-
-			return gc;
-		}
-
-		private static void groupCells_OLD(GroupedCell gc, List<VoronoiCore> voronoiDiagrams, int index)
-		{
-			foreach (Cell cell in voronoiDiagrams[index].Cells)
-			{
-				if (gc.Current == null || gc.Current.IsVertexInCell(cell.Vertex))
-				{
-					GroupedCell child = new GroupedCell(cell);
-					gc.AddChild(child);
-
-					if (index + 1 < voronoiDiagrams.Count)
-					{
-						groupCells_OLD(child, voronoiDiagrams, index + 1);
-					}
-				}
-			}
-		}
-		#endregion
-		#endregion
-
 		#region Fields
-		private Cell current;
+		private Cell cell;
+		private GroupedCell parent;
 		private List<GroupedCell> children;
 		#endregion
 
 		#region Properties
-		public Cell Current
+		public Cell Cell
 		{
-			get { return current; }
+			get { return cell; }
+		}
+
+		public GroupedCell Parent
+		{
+			get { return parent; }
 		}
 
 		public int Count
@@ -94,9 +67,10 @@ namespace WorldGen
 		}
 		#endregion
 
-		private GroupedCell(Cell current)
+		private GroupedCell(Cell cell)
 		{
-			this.current = current;
+			this.cell = cell;
+			this.parent = null;
 		}
 
 		public void AddChild(GroupedCell child)
@@ -105,6 +79,8 @@ namespace WorldGen
 			{
 				children = new List<GroupedCell>();
 			}
+
+			child.parent = this;
 
 			children.Add(child);
 		}

@@ -49,5 +49,15 @@ namespace WorldGen.Voronoi
 
 			return (int)Math.Round((other.X - X) * 1000000);
 		}
+
+		public static Vertex operator-(Vertex v1, Vertex v2)
+		{
+			return new Vertex(v1.X - v2.X, v1.Y - v2.Y);
+		}
+
+		public static Vertex operator +(Vertex v1, Vertex v2)
+		{
+			return new Vertex(v1.X + v2.X, v1.Y + v2.Y);
+		}
 	}
 }

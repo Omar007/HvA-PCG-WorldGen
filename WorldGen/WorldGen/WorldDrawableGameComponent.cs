@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Diagnostics;
 using WorldGen.HelperFunctions;
 using WorldGen.Voronoi;
 
@@ -17,6 +19,7 @@ namespace WorldGen
 		private KeyboardState lastState;
 
 		private Texture2D texture;
+		private TimeSpan drawTime;
 
 		private VoronoiManager voronoiManager;
 		private WorldManager wm;
@@ -58,9 +61,19 @@ namespace WorldGen
 		public override void Update(GameTime gameTime)
 		{
 			// TODO: Add your update code here
-			if (Keyboard.GetState().IsKeyDown(Keys.F2) && (lastState.IsKeyUp(Keys.F2) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
+			if (Keyboard.GetState().IsKeyDown(Keys.F2) && lastState.IsKeyUp(Keys.F2))
 			{
 				generate();
+			}
+
+			if (Keyboard.GetState().IsKeyDown(Keys.F3) && lastState.IsKeyUp(Keys.F3))
+			{
+				generateLand();
+			}
+
+			if (Keyboard.GetState().IsKeyDown(Keys.F4) && lastState.IsKeyUp(Keys.F4))
+			{
+				generateElevation();
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.C) && lastState.IsKeyUp(Keys.C))
@@ -95,17 +108,22 @@ namespace WorldGen
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
-				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, cell.Vertex.ToVector2(), 3);
-				//spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2(), Color.Black);
+				if (cell.ContainsVertex(new Vertex(Mouse.GetState().X, Mouse.GetState().Y)))
+				{
+					HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, cell.Vertex.ToVector2(), 3);
+					spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
+				}
 			}
 
 			HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, new Color(0, 0, 0, 192), new Vector2(100, 100), 200);
 
-			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), Vector2.Zero, Color.Brown);
-			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 20), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.GroupCellsComputeTime.ToString(), Vector2.Zero, Color.Brown);
+			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), new Vector2(0, 20), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 40), Color.Brown);
+			spriteBatch.DrawString(sFont, drawTime.ToString(), new Vector2(0, 60), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 40), Color.Brown);
-			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 60), Color.Brown);
+			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 80), Color.Brown);
+			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 100), Color.Brown);
 
 			spriteBatch.End();
 
@@ -120,19 +138,55 @@ namespace WorldGen
 			texture = null;
 		}
 
+		private void generateLand()
+		{
+			if (texture == null)
+			{
+				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+			}
+
+			clear();
+			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
+
+			wm.generateLand();
+
+			createTexture();
+		}
+
+		private void generateElevation()
+		{
+			if (texture == null)
+			{
+				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+			}
+
+			clear();
+			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
+
+			wm.generateElevation();
+
+			createTexture();
+		}
+
 		private void generate()
 		{
-			clear();
+			if (texture == null)
+			{
+				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+			}
 
-			wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+			clear();
+			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
+
 			wm.generate();
-			drawIndex = wm.VoronoiDiagrams.Count - 1;
 
 			createTexture();
 		}
 
 		private void createTexture()
 		{
+			Stopwatch sw = Stopwatch.StartNew();
+
 			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
 			graphics.Clear(System.Drawing.Color.Transparent);
@@ -194,6 +248,9 @@ namespace WorldGen
 				s.Seek(0, System.IO.SeekOrigin.Begin);
 				texture = Texture2D.FromStream(GraphicsDevice, s);
 			}
+
+			sw.Stop();
+			drawTime = sw.Elapsed;
 		}
 	}
 }

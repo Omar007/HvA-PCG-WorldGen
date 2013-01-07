@@ -35,18 +35,9 @@ namespace WorldGen.WorldGenerator
 					if (landNeighbourCount > becomesLandMark) //Surrounded by land for more than the marked value; make myself land.
 					{
 						cell.CellLandType = CellLandType.Land;
-
-						//if (otherCell.CellLandType != CellLandType.Land)
-						//{
-						//	setLandCells(otherCell);
-						//}
+						break;
 					}
 				}
-			}
-
-			if (landNeighbourCount > becomesLandMark) //Surrounded by land for more than the marked value; make myself land.
-			{
-				cell.CellLandType = CellLandType.Land;
 			}
 		}
 
@@ -66,55 +57,62 @@ namespace WorldGen.WorldGenerator
 
 		private void reset(GroupedCell gc)
 		{
-			for (int i = 0; i < gc.Count; i++)
+			resetAsLandMinimum = RESET_AS_LAND_MIN;
+			changeToLandThreshold = CHANGE_TO_LAND_THRESHOLD;
+
+			if (gc.Parent != null && gc.Parent.Cell != null)
 			{
-				GroupedCell child = gc[i];
-
-				resetAsLandMinimum = RESET_AS_LAND_MIN;
-				changeToLandThreshold = CHANGE_TO_LAND_THRESHOLD;
-
-				if (gc.Current != null)
+				switch (gc.Parent.Cell.CellLandType)
 				{
-					switch (gc.Current.CellLandType)
-					{
-						case CellLandType.Land:
-							resetAsLandMinimum = 0.2;
-							changeToLandThreshold = 0.1;
-							break;
+					case CellLandType.Land:
+						resetAsLandMinimum = 0.5; //0.2;
+						changeToLandThreshold = 0.4; //0.1;
+						break;
 
-						case CellLandType.Water:
-							resetAsLandMinimum = 0.7;
-							changeToLandThreshold = 0.6;
-							break;
+					case CellLandType.Water:
+						resetAsLandMinimum = 0.8; //0.7;
+						changeToLandThreshold = 0.7; //0.6;
+						break;
 
-						case CellLandType.Ocean:
-							resetAsLandMinimum = 0.85;
-							changeToLandThreshold = 0.75;
-							break;
-					}
+					case CellLandType.Ocean:
+						resetAsLandMinimum = 0.9; //0.85;
+						changeToLandThreshold = 0.8; //0.75;
+						break;
 				}
 
-				if (child.Current.CellEdgeType == CellEdgeType.NoEdge && random.NextDouble() > resetAsLandMinimum) //Not a cell on the edge of the map and land 'threshold' reached.
+				gc.Cell.CellLandType = gc.Parent.Cell.CellLandType;
+
+				if (gc.Cell.CellEdgeType != CellEdgeType.NoEdge)
 				{
-					child.Current.CellLandType = CellLandType.Land;
+					gc.Cell.CellLandType = CellLandType.Ocean;
 				}
-				else if (child.Current.CellEdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map
+				else if (gc.Cell.CellLandType == CellLandType.Ocean)
 				{
-					child.Current.CellLandType = CellLandType.Ocean;
+					gc.Cell.CellLandType = CellLandType.Water;
 				}
-				else //Everything else is water
-				{
-					child.Current.CellLandType = CellLandType.Water;
-				}
+
+				return;
+			}
+
+			if (gc.Cell.CellEdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map is always ocean
+			{
+				gc.Cell.CellLandType = CellLandType.Ocean;
+			}
+			else if (random.NextDouble() > resetAsLandMinimum) //Not a cell on the edge of the map and land 'threshold' reached.
+			{
+				gc.Cell.CellLandType = CellLandType.Land;
+			}
+			else //Everything else is water
+			{
+				gc.Cell.CellLandType = CellLandType.Water;
 			}
 		}
 
-		public void generate(GroupedCell gc, VoronoiCore vc)
+		public void generate(GroupedCell rootGC, VoronoiCore vc)
 		{
-			if (gc != null)
+			if (rootGC != null)
 			{
-				reset(gc);
-				generate(gc);
+				generate(rootGC);
 			}
 
 			if (vc != null)
@@ -127,19 +125,21 @@ namespace WorldGen.WorldGenerator
 		{
 			for (int i = 0; i < gc.Count; i++)
 			{
+				reset(gc[i]);
+			}
+
+			for (int i = 0; i < gc.Count; i++)
+			{
 				GroupedCell child = gc[i];
 
-				if (gc.Current != null)
+				//reset(child);
+
+				if (child.Cell.CellLandType == CellLandType.Water)
 				{
-					reset(gc);
+					setLandCells(child.Cell);
 				}
 
-				if (child.Current.CellLandType == CellLandType.Water)
-				{
-					setLandCells(child.Current);
-				}
-
-				generate(child, null);
+				generate(child);
 			}
 		}
 

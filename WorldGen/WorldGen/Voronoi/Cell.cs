@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 
 namespace WorldGen.Voronoi
 {
@@ -123,20 +123,26 @@ namespace WorldGen.Voronoi
 			return halfEdges.Count;
 		}
 
-		public bool IsVertexInCell(Vertex vertex)
+		public bool ContainsVertex(Vertex vertex)
 		{
-			List<double> coefficients = CellPoints.Skip(1).Select((p, i) =>
-				(vertex.Y - CellPoints[i].Y) * (p.X - CellPoints[i].X)
-				- (vertex.X - CellPoints[i].X) * (p.Y - CellPoints[i].Y)).ToList();
+			double sign = 0;
 
-			if (coefficients.Any(p => p == 0))
+			foreach (HalfEdge hEdge in HalfEdges)
 			{
-				return true;
-			}
+				Vertex affineSegment = hEdge.EndPoint - hEdge.StartPoint;
+				Vertex affinePoint = vertex - hEdge.StartPoint;
 
-			for (int i = 1; i < coefficients.Count(); i++)
-			{
-				if (coefficients[i] * coefficients[i - 1] < 0)
+				double crossProd = affineSegment.X * affinePoint.Y - affineSegment.Y * affinePoint.X;
+				if (crossProd != 0)
+				{
+					crossProd /= Math.Abs(crossProd);
+				}
+
+				if (sign == 0)
+				{
+					sign = crossProd;
+				}
+				else if (sign != crossProd)
 				{
 					return false;
 				}

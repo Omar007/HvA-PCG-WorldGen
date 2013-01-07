@@ -37,7 +37,7 @@ namespace WorldGen
 
 			VoronoiCore vc0 = new VoronoiCore();
 			voronoiDiagrams.Add(vc0);
-			pointCounts.Add(vc0, 100);
+			pointCounts.Add(vc0, 250);
 
 			VoronoiCore vc1 = new VoronoiCore();
 			voronoiDiagrams.Add(vc1);

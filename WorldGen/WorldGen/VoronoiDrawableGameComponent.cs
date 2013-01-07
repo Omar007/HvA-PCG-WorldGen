@@ -27,7 +27,7 @@ namespace WorldGen
 		public VoronoiDrawableGameComponent(Game game)
 			: base(game)
 		{
-			vManager = new VoronoiManager(1280, 720);
+			vManager = new VoronoiManager(game.GraphicsDevice.Viewport.Width, game.GraphicsDevice.Viewport.Height);
 			vManager.generate();
 
 			drawIndex = vManager.VoronoiDiagrams.Count - 1;
