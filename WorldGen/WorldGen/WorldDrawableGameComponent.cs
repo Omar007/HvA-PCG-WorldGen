@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
 using WorldGen.HelperFunctions;
+using WorldGen.Pathfinding;
 using WorldGen.Voronoi;
 
 namespace WorldGen
@@ -28,6 +29,11 @@ namespace WorldGen
 		private int waterCount;
 
 		private int drawIndex = 0;
+
+		private Pathfinder pathfinder;
+		private PathNode lastPath;
+		private Cell startCell;
+		private Cell endCell;
 
 		public WorldDrawableGameComponent(Game game, VoronoiManager voronoiManager)
 			: base(game)
@@ -87,6 +93,8 @@ namespace WorldGen
 				{
 					drawIndex = (drawIndex + 1) % wm.VoronoiDiagrams.Count;
 					createTexture();
+
+					pathfinder = new Pathfinder(wm.VoronoiDiagrams[drawIndex].Cells);
 				}
 			}
 
@@ -112,6 +120,35 @@ namespace WorldGen
 				{
 					HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, cell.Vertex.ToVector2(), 3);
 					spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
+
+
+					if (Mouse.GetState().LeftButton == ButtonState.Pressed)
+					{
+						if (startCell == null)
+						{
+							startCell = cell;
+						}
+						else if (endCell == null)
+						{
+							endCell = cell;
+						}
+						else
+						{
+							lastPath = pathfinder.findPath(startCell, endCell);
+							startCell = endCell = null;
+						}
+					}
+				}
+			}
+
+			if (lastPath != null)
+			{
+				PathNode path = lastPath;
+
+				while (path.Next != null)
+				{
+					HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, path.Cell.Vertex.ToVector2(), path.Next.Cell.Vertex.ToVector2());
+					path = path.Next;
 				}
 			}
 
@@ -181,6 +218,8 @@ namespace WorldGen
 			wm.generate();
 
 			createTexture();
+
+			pathfinder = new Pathfinder(wm.VoronoiDiagrams[drawIndex].Cells);
 		}
 
 		private void createTexture()

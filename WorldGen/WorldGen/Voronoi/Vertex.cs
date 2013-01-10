@@ -28,9 +28,22 @@ namespace WorldGen.Voronoi
 			this.y = y;
 		}
 
+		public Vertex(Vertex vertex)
+			: this(vertex.x, vertex.y)
+		{
+		}
+
 		public Vertex(Vector2 vector)
 			: this(vector.X, vector.Y)
 		{
+		}
+
+		public double DistanceTo(Vertex other)
+		{
+			double dx = x - other.x;
+			double dy = y - other.y;
+
+			return dx * dx + dy * dy;
 		}
 
 		public Vector2 ToVector2()

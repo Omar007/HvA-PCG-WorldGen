@@ -77,6 +77,8 @@
     <Compile Include="GroupedCell.cs" />
     <Compile Include="HelperFunctions\ColorHelpers.cs" />
     <Compile Include="HelperFunctions\PrimitivesBatch.cs" />
+    <Compile Include="Pathfinding\Pathfinder.cs" />
+    <Compile Include="Pathfinding\PathNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Main.cs" />
