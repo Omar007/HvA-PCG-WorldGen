@@ -45,7 +45,7 @@ namespace WorldGen.Pathfinding
 
 				foreach (HalfEdge hEdge in node.Cell.HalfEdges)
 				{
-					if (hEdge.NeighbourCell == null || hEdge.NeighbourCell.CellLandType != CellLandType.Land)
+					if (hEdge.NeighbourCell == null || hEdge.NeighbourCell.LandType != CellLandType.Land)
 					{
 						continue;
 					}
@@ -97,7 +97,7 @@ namespace WorldGen.Pathfinding
 
 			//hCost = cell.Vertex.DistanceTo(endCell.Vertex);
 			//hCost += Math.Abs(cell.CellElevationLevel - endCell.CellElevationLevel);
-			hCost = Vector3.Distance(new Vector3(cell.Vertex.ToVector2(), cell.CellElevationLevel), new Vector3(endCell.Vertex.ToVector2(), endCell.CellElevationLevel));
+			hCost = Vector3.Distance(new Vector3(cell.Vertex.ToVector2(), cell.ElevationLevel), new Vector3(endCell.Vertex.ToVector2(), endCell.ElevationLevel));
 
 			return hCost;
 		}

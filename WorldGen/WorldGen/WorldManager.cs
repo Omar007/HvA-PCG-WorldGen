@@ -19,6 +19,9 @@ namespace WorldGen
 
 		private TimeSpan elevationComputeTime;
 		private ElevationGenerator elevationGenerator;
+
+		private TimeSpan moistureComputeTime;
+		private MoistureGenerator moistureGenerator;
 		#endregion
 
 		#region Properties
@@ -47,6 +50,11 @@ namespace WorldGen
 			get { return elevationComputeTime; }
 		}
 
+		public TimeSpan MoistureComputeTime
+		{
+			get { return moistureComputeTime; }
+		}
+
 		public float MaxHeight
 		{
 			get { return elevationGenerator.MaxHeight; }
@@ -64,6 +72,7 @@ namespace WorldGen
 
 			landGenerator = new LandGenerator();
 			elevationGenerator = new ElevationGenerator(6, 2);
+			moistureGenerator = new MoistureGenerator(new Vertex(-1, 1));
 		}
 
 		public void generateLand()
@@ -73,7 +82,7 @@ namespace WorldGen
 			{
 				foreach (Cell cell in vc.Cells)
 				{
-					cell.CellLandType = CellLandType.Undefined;
+					cell.LandType = CellLandType.Undefined;
 				}
 			}
 
@@ -91,10 +100,19 @@ namespace WorldGen
 			elevationComputeTime = sw.Elapsed;
 		}
 
+		public void generateMoisture()
+		{
+			Stopwatch sw = Stopwatch.StartNew();
+			moistureGenerator.generate(DeepestVoronoi);
+			sw.Stop();
+			moistureComputeTime = sw.Elapsed;
+		}
+
 		public void generate()
 		{
 			generateLand();
 			generateElevation();
+			generateMoisture();
 		}
 	}
 }

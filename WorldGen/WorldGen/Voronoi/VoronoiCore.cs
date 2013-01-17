@@ -891,25 +891,25 @@ namespace WorldGen.Voronoi
 						{
 							vb = new Vertex(xl, equalWithEpsilon(startPoint.X, xl) ? startPoint.Y : yb);
 
-							cell.CellEdgeType = CellEdgeType.WestEdge;
+							cell.EdgeType = CellEdgeType.WestEdge;
 						}
 						else if (equalWithEpsilon(endPoint.Y, yb) && lessThanEpsilon(endPoint.X, xr))
 						{
 							vb = new Vertex(equalWithEpsilon(startPoint.Y, yb) ? startPoint.X : xr, yb);
 
-							cell.CellEdgeType = CellEdgeType.SouthEdge;
+							cell.EdgeType = CellEdgeType.SouthEdge;
 						}
 						else if (equalWithEpsilon(endPoint.X, xr) && greaterThanEpsilon(endPoint.Y, yt))
 						{
 							vb = new Vertex(xr, equalWithEpsilon(startPoint.X, xr) ? startPoint.Y : yt);
 
-							cell.CellEdgeType = CellEdgeType.EastEdge;
+							cell.EdgeType = CellEdgeType.EastEdge;
 						}
 						else if (equalWithEpsilon(endPoint.Y, yt) && greaterThanEpsilon(endPoint.X, xl))
 						{
 							vb = new Vertex(equalWithEpsilon(startPoint.Y, yt) ? startPoint.X : xl, yt);
 
-							cell.CellEdgeType = CellEdgeType.NorthEdge;
+							cell.EdgeType = CellEdgeType.NorthEdge;
 						}
 
 						Edge edge = createBorderEdge(cell, va, vb);

@@ -97,6 +97,7 @@
     <Compile Include="WorldDrawableGameComponent.cs" />
     <Compile Include="WorldGenerator\ElevationGenerator.cs" />
     <Compile Include="WorldGenerator\LandGenerator.cs" />
+    <Compile Include="WorldGenerator\MoistureGenerator.cs" />
     <Compile Include="WorldManager.cs" />
   </ItemGroup>
   <ItemGroup>

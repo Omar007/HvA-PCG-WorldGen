@@ -110,7 +110,7 @@ namespace WorldGen
 				Color color = Color.Yellow;
 				int size = 3;
 
-				switch (cell.CellEdgeType)
+				switch (cell.EdgeType)
 				{
 					case CellEdgeType.WestEdge:
 						color = Color.Red;

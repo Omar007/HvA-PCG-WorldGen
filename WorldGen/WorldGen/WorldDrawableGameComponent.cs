@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Diagnostics;
 using WorldGen.HelperFunctions;
 using WorldGen.Pathfinding;
 using WorldGen.Voronoi;
@@ -20,7 +18,7 @@ namespace WorldGen
 		private KeyboardState lastState;
 
 		private Texture2D texture;
-		private TimeSpan drawTime;
+		private Texture2D moistureOverlayTexture;
 
 		private VoronoiManager voronoiManager;
 		private WorldManager wm;
@@ -82,6 +80,11 @@ namespace WorldGen
 				generateElevation();
 			}
 
+			if (Keyboard.GetState().IsKeyDown(Keys.F5) && lastState.IsKeyUp(Keys.F5))
+			{
+				generateMoisture();
+			}
+
 			if (Keyboard.GetState().IsKeyDown(Keys.C) && lastState.IsKeyUp(Keys.C))
 			{
 				clear();
@@ -113,26 +116,29 @@ namespace WorldGen
 			spriteBatch.Begin();
 
 			spriteBatch.Draw(texture, Vector2.Zero, Color.White);
+			//spriteBatch.Draw(moistureOverlayTexture, Vector2.Zero, Color.White);
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
-				if (cell.ContainsVertex(new Vertex(Mouse.GetState().X, Mouse.GetState().Y)))
+				bool cellContainsMouse = cell.ContainsVertex(new Vertex(Mouse.GetState().X, Mouse.GetState().Y));
+
+				if (cellContainsMouse || cell == startCell || cell == endCell)
 				{
 					HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, cell.Vertex.ToVector2(), 3);
-					spriteBatch.DrawString(sFont, cell.CellElevationLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
+					spriteBatch.DrawString(sFont, cell.ElevationLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
+					spriteBatch.DrawString(sFont, cell.MoistureLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 20), Color.Black);
 
-
-					if (Mouse.GetState().LeftButton == ButtonState.Pressed)
+					if (cellContainsMouse && Mouse.GetState().LeftButton == ButtonState.Pressed)
 					{
 						if (startCell == null)
 						{
 							startCell = cell;
 						}
-						else if (endCell == null)
+						else if (endCell == null && cell != startCell)
 						{
 							endCell = cell;
 						}
-						else
+						else if (startCell != null && endCell != null)
 						{
 							lastPath = pathfinder.findPath(startCell, endCell);
 							startCell = endCell = null;
@@ -157,7 +163,7 @@ namespace WorldGen
 			spriteBatch.DrawString(sFont, wm.GroupCellsComputeTime.ToString(), Vector2.Zero, Color.Brown);
 			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), new Vector2(0, 20), Color.Brown);
 			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 40), Color.Brown);
-			spriteBatch.DrawString(sFont, drawTime.ToString(), new Vector2(0, 60), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.MoistureComputeTime.ToString(), new Vector2(0, 60), Color.Brown);
 
 			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 80), Color.Brown);
 			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 100), Color.Brown);
@@ -173,6 +179,7 @@ namespace WorldGen
 			waterCount = 0;
 
 			texture = null;
+			moistureOverlayTexture = null;
 		}
 
 		private void generateLand()
@@ -205,6 +212,21 @@ namespace WorldGen
 			createTexture();
 		}
 
+		private void generateMoisture()
+		{
+			if (texture == null)
+			{
+				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+			}
+
+			clear();
+			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
+
+			wm.generateMoisture();
+
+			createMoistureOverlayTexture();
+		}
+
 		private void generate()
 		{
 			if (texture == null)
@@ -218,14 +240,13 @@ namespace WorldGen
 			wm.generate();
 
 			createTexture();
+			createMoistureOverlayTexture();
 
 			pathfinder = new Pathfinder(wm.VoronoiDiagrams[drawIndex].Cells);
 		}
 
 		private void createTexture()
 		{
-			Stopwatch sw = Stopwatch.StartNew();
-
 			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
 			graphics.Clear(System.Drawing.Color.Transparent);
@@ -235,47 +256,42 @@ namespace WorldGen
 				System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
 				foreach (HalfEdge he in cell.HalfEdges)
 				{
-					Vector2 sp = he.StartPoint.ToVector2();
-					Vector2 ep = he.EndPoint.ToVector2();
+					Vertex sp = he.StartPoint;
+					Vertex ep = he.EndPoint;
 
-					gPath.AddLine(sp.X, sp.Y, ep.X, ep.Y);
+					gPath.AddLine((float)sp.X, (float)sp.Y, (float)ep.X, (float)ep.Y);
 				}
 				gPath.CloseFigure();
 
-				System.Drawing.Color color = System.Drawing.Color.Transparent;
-				System.Drawing.Color gotoColor = System.Drawing.Color.Transparent;
+				System.Drawing.Color baseColor = System.Drawing.Color.Transparent;
+				System.Drawing.Color terrainColor = System.Drawing.Color.Transparent;
 
-				float rgbValue = 0;
+				float terrainRGBValue = 0;
 
-				switch (cell.CellLandType)
+				switch (cell.LandType)
 				{
 					case CellLandType.Land:
-						color = System.Drawing.Color.SaddleBrown;
-						gotoColor = System.Drawing.Color.SandyBrown;
-						rgbValue = (cell.CellElevationLevel / wm.MaxHeight);
+						baseColor = System.Drawing.Color.SaddleBrown;
+						terrainColor = System.Drawing.Color.SandyBrown;
+						terrainRGBValue = (cell.ElevationLevel / wm.MaxHeight);
 						landCount++;
 						break;
 
 					case CellLandType.Water:
-						color = System.Drawing.Color.Blue;
-						gotoColor = System.Drawing.Color.LightBlue;
-						rgbValue = (cell.CellElevationLevel / wm.MaxHeight);
+						baseColor = System.Drawing.Color.Blue;
+						terrainColor = System.Drawing.Color.LightBlue;
+						terrainRGBValue = (cell.ElevationLevel / wm.MaxHeight);
 						waterCount++;
 						break;
 
 					case CellLandType.Ocean:
-						color = System.Drawing.Color.DarkBlue;
-						gotoColor = System.Drawing.Color.DarkBlue;
+						baseColor = System.Drawing.Color.DarkBlue;
+						terrainColor = System.Drawing.Color.DarkBlue;
 						waterCount++;
 						break;
 				}
 
-				if (float.IsNaN(cell.CellElevationLevel)) //Prevent 'Undefined' areas from becoming black.
-				{
-					rgbValue = 0;
-				}
-
-				graphics.FillRegion(new System.Drawing.SolidBrush(color.Lerp(gotoColor, rgbValue)), new System.Drawing.Region(gPath));
+				graphics.FillRegion(new System.Drawing.SolidBrush(baseColor.Lerp(terrainColor, terrainRGBValue)), new System.Drawing.Region(gPath));
 			}
 
 			graphics.Dispose();
@@ -287,9 +303,43 @@ namespace WorldGen
 				s.Seek(0, System.IO.SeekOrigin.Begin);
 				texture = Texture2D.FromStream(GraphicsDevice, s);
 			}
+		}
 
-			sw.Stop();
-			drawTime = sw.Elapsed;
+		private void createMoistureOverlayTexture()
+		{
+			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
+			graphics.Clear(System.Drawing.Color.Transparent);
+
+			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
+			{
+				System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
+				foreach (HalfEdge he in cell.HalfEdges)
+				{
+					Vertex sp = he.StartPoint;
+					Vertex ep = he.EndPoint;
+
+					gPath.AddLine((float)sp.X, (float)sp.Y, (float)ep.X, (float)ep.Y);
+				}
+				gPath.CloseFigure();
+
+				System.Drawing.Color baseColor = System.Drawing.Color.Blue;
+				System.Drawing.Color moistureColor = System.Drawing.Color.LightBlue;
+
+				float moistureRGBValue = (cell.MoistureLevel / float.MaxValue);
+
+				graphics.FillRegion(new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(192, baseColor.Lerp(moistureColor, moistureRGBValue))), new System.Drawing.Region(gPath));
+			}
+
+			graphics.Dispose();
+
+			//Convert Bitmap to XNA texture
+			using (System.IO.MemoryStream s = new System.IO.MemoryStream())
+			{
+				bitmap.Save(s, System.Drawing.Imaging.ImageFormat.Png);
+				s.Seek(0, System.IO.SeekOrigin.Begin);
+				moistureOverlayTexture = Texture2D.FromStream(GraphicsDevice, s);
+			}
 		}
 	}
 }

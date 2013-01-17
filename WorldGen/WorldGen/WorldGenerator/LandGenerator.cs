@@ -28,13 +28,13 @@ namespace WorldGen.WorldGenerator
 			{
 				Cell otherCell = halfEdge.NeighbourCell;
 
-				if (otherCell != null && otherCell.CellLandType == CellLandType.Land)
+				if (otherCell != null && otherCell.LandType == CellLandType.Land)
 				{
 					landNeighbourCount++;
 
 					if (landNeighbourCount > becomesLandMark) //Surrounded by land for more than the marked value; make myself land.
 					{
-						cell.CellLandType = CellLandType.Land;
+						cell.LandType = CellLandType.Land;
 						break;
 					}
 				}
@@ -47,9 +47,9 @@ namespace WorldGen.WorldGenerator
 			{
 				Cell otherCell = halfEdge.NeighbourCell;
 
-				if (otherCell != null && otherCell.CellLandType == CellLandType.Water)
+				if (otherCell != null && otherCell.LandType == CellLandType.Water)
 				{
-					otherCell.CellLandType = CellLandType.Ocean;
+					otherCell.LandType = CellLandType.Ocean;
 					setOceanCells(otherCell);
 				}
 			}
@@ -62,7 +62,7 @@ namespace WorldGen.WorldGenerator
 
 			if (gc.Parent != null && gc.Parent.Cell != null)
 			{
-				switch (gc.Parent.Cell.CellLandType)
+				switch (gc.Parent.Cell.LandType)
 				{
 					case CellLandType.Land:
 						resetAsLandMinimum = 0.5; //0.2;
@@ -80,31 +80,31 @@ namespace WorldGen.WorldGenerator
 						break;
 				}
 
-				gc.Cell.CellLandType = gc.Parent.Cell.CellLandType;
+				gc.Cell.LandType = gc.Parent.Cell.LandType;
 
-				if (gc.Cell.CellEdgeType != CellEdgeType.NoEdge)
+				if (gc.Cell.EdgeType != CellEdgeType.NoEdge)
 				{
-					gc.Cell.CellLandType = CellLandType.Ocean;
+					gc.Cell.LandType = CellLandType.Ocean;
 				}
-				else if (gc.Cell.CellLandType == CellLandType.Ocean)
+				else if (gc.Cell.LandType == CellLandType.Ocean)
 				{
-					gc.Cell.CellLandType = CellLandType.Water;
+					gc.Cell.LandType = CellLandType.Water;
 				}
 
 				return;
 			}
 
-			if (gc.Cell.CellEdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map is always ocean
+			if (gc.Cell.EdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map is always ocean
 			{
-				gc.Cell.CellLandType = CellLandType.Ocean;
+				gc.Cell.LandType = CellLandType.Ocean;
 			}
 			else if (random.NextDouble() > resetAsLandMinimum) //Not a cell on the edge of the map and land 'threshold' reached.
 			{
-				gc.Cell.CellLandType = CellLandType.Land;
+				gc.Cell.LandType = CellLandType.Land;
 			}
 			else //Everything else is water
 			{
-				gc.Cell.CellLandType = CellLandType.Water;
+				gc.Cell.LandType = CellLandType.Water;
 			}
 		}
 
@@ -134,7 +134,7 @@ namespace WorldGen.WorldGenerator
 
 				//reset(child);
 
-				if (child.Cell.CellLandType == CellLandType.Water)
+				if (child.Cell.LandType == CellLandType.Water)
 				{
 					setLandCells(child.Cell);
 				}
@@ -147,7 +147,7 @@ namespace WorldGen.WorldGenerator
 		{
 			foreach (Cell cell in vc.Cells)
 			{
-				if (cell.CellLandType == CellLandType.Ocean)
+				if (cell.LandType == CellLandType.Ocean)
 				{
 					setOceanCells(cell);
 				}

@@ -42,33 +42,33 @@ namespace WorldGen.WorldGenerator
 
 				if (otherCell != null)
 				{
-					if (otherCell.CellLandType == CellLandType.Ocean)
+					if (otherCell.LandType == CellLandType.Ocean)
 					{
-						cell.CellElevationLevel = (float)Math.Round(random.NextDouble() * maxDeviation);
+						cell.ElevationLevel = (float)Math.Round(random.NextDouble() * maxDeviation);
 
 						return;
 					}
 
-					if (cell.CellLandType != CellLandType.Water && otherCell.CellLandType == CellLandType.Water)
+					if (cell.LandType != CellLandType.Water && otherCell.LandType == CellLandType.Water)
 					{
 						correctWater(otherCell, ref lowestNeighbour);
 					}
-					else if (otherCell.CellElevationLevel < lowestNeighbour)
+					else if (otherCell.ElevationLevel < lowestNeighbour)
 					{
-						lowestNeighbour = otherCell.CellElevationLevel;
+						lowestNeighbour = otherCell.ElevationLevel;
 					}
 				}
 			}
 
-			float deviation = Math.Abs(cell.CellElevationLevel - lowestNeighbour);
+			float deviation = Math.Abs(cell.ElevationLevel - lowestNeighbour);
 
 			if (deviation < maxDeviation)
 			{
-				cell.CellElevationLevel += (float)Math.Round(random.NextDouble() * (maxDeviation - deviation));
+				cell.ElevationLevel += (float)Math.Round(random.NextDouble() * (maxDeviation - deviation));
 
-				if (cell.CellElevationLevel > maxHeight)
+				if (cell.ElevationLevel > maxHeight)
 				{
-					cell.CellElevationLevel = maxHeight;
+					cell.ElevationLevel = maxHeight;
 				}
 			}
 		}
@@ -81,19 +81,19 @@ namespace WorldGen.WorldGenerator
 
 				if (otherCell != null)
 				{
-					if (otherCell.CellElevationLevel < lowestLand && otherCell.CellLandType == CellLandType.Land)
+					if (otherCell.ElevationLevel < lowestLand && otherCell.LandType == CellLandType.Land)
 					{
-						lowestLand = otherCell.CellElevationLevel;
-						cell.CellElevationLevel = lowestLand;
+						lowestLand = otherCell.ElevationLevel;
+						cell.ElevationLevel = lowestLand;
 					}
-					else if(otherCell.CellElevationLevel != lowestLand && otherCell.CellLandType == CellLandType.Water)
+					else if(otherCell.ElevationLevel != lowestLand && otherCell.LandType == CellLandType.Water)
 					{
-						otherCell.CellElevationLevel = lowestLand;
+						otherCell.ElevationLevel = lowestLand;
 						correctWater(otherCell, ref lowestLand);
 					}
 				}
 
-				cell.CellElevationLevel = lowestLand;
+				cell.ElevationLevel = lowestLand;
 			}
 		}
 
@@ -101,18 +101,18 @@ namespace WorldGen.WorldGenerator
 		{
 			foreach (Cell cell in vc.Cells)
 			{
-				switch (cell.CellLandType)
+				switch (cell.LandType)
 				{
 					case CellLandType.Land:
-						cell.CellElevationLevel = GroundLevel;
+						cell.ElevationLevel = GroundLevel;
 						break;
 
 					case CellLandType.Ocean: //Ocean always at sea level
-						cell.CellElevationLevel = SeaLevel;
+						cell.ElevationLevel = SeaLevel;
 						break;
 
 					case CellLandType.Water:
-						cell.CellElevationLevel = GroundLevel;
+						cell.ElevationLevel = GroundLevel;
 						break;
 				}
 			}
@@ -126,7 +126,7 @@ namespace WorldGen.WorldGenerator
 			{
 				foreach (Cell cell in vc.Cells)
 				{
-					if (cell.CellLandType != CellLandType.Ocean)
+					if (cell.LandType != CellLandType.Ocean)
 					{
 						setElevation(cell);
 					}
@@ -135,7 +135,7 @@ namespace WorldGen.WorldGenerator
 
 			foreach (Cell cell in vc.Cells)
 			{
-				if (cell.CellLandType == CellLandType.Water)
+				if (cell.LandType == CellLandType.Water)
 				{
 					float lowestLand = maxHeight;
 					correctWater(cell, ref lowestLand);

@@ -24,13 +24,12 @@ namespace WorldGen.Voronoi
 	{
 		#region Fields
 		private Vertex vertex;
-
 		private List<HalfEdge> halfEdges;
-		private List<Vertex> cellPoints;
 
-		private CellEdgeType cellEdgeType;
-		private CellLandType cellLandType;
-		private float cellElevationLevel;
+		private CellEdgeType edgeType;
+		private CellLandType landType;
+		private float elevationLevel;
+		private float moistureLevel;
 		#endregion
 
 		#region Properties
@@ -54,38 +53,28 @@ namespace WorldGen.Voronoi
 			get { return halfEdges; }
 		}
 
-		public List<Vertex> CellPoints
+		public CellEdgeType EdgeType
 		{
-			get
-			{
-				if (cellPoints.Count != halfEdges.Count)
-				{
-					cellPoints.Clear();
-					foreach (HalfEdge edge in halfEdges)
-					{
-						cellPoints.Add(edge.StartPoint);
-					}
-				}
-				return cellPoints;
-			}
+			get { return edgeType; }
+			set { edgeType = value; }
 		}
 
-		public CellEdgeType CellEdgeType
+		public CellLandType LandType
 		{
-			get { return cellEdgeType; }
-			set { cellEdgeType = value; }
+			get { return landType; }
+			set { landType = value; }
 		}
 
-		public CellLandType CellLandType
+		public float ElevationLevel
 		{
-			get { return cellLandType; }
-			set { cellLandType = value; }
+			get { return elevationLevel; }
+			set { elevationLevel = value; }
 		}
 
-		public float CellElevationLevel
+		public float MoistureLevel
 		{
-			get { return cellElevationLevel; }
-			set { cellElevationLevel = value; }
+			get { return moistureLevel; }
+			set { moistureLevel = value; }
 		}
 		#endregion
 
@@ -99,11 +88,11 @@ namespace WorldGen.Voronoi
 			this.vertex = v;
 
 			halfEdges = new List<HalfEdge>();
-			cellPoints = new List<Vertex>();
 
-			cellEdgeType = CellEdgeType.NoEdge;
-			cellLandType = CellLandType.Undefined;
-			cellElevationLevel = float.NaN;
+			edgeType = CellEdgeType.NoEdge;
+			landType = CellLandType.Undefined;
+			elevationLevel = float.NaN;
+			moistureLevel = float.NaN;
 		}
 
 		public int prepare()
@@ -125,7 +114,7 @@ namespace WorldGen.Voronoi
 
 		public bool ContainsVertex(Vertex vertex)
 		{
-			double sign = 0;
+			double sign = double.NaN;
 
 			foreach (HalfEdge hEdge in HalfEdges)
 			{
@@ -135,10 +124,10 @@ namespace WorldGen.Voronoi
 				double crossProd = affineSegment.X * affinePoint.Y - affineSegment.Y * affinePoint.X;
 				if (crossProd != 0)
 				{
-					crossProd /= Math.Abs(crossProd);
+					crossProd /= Math.Abs(crossProd); //Make it -1 or 1.
 				}
 
-				if (sign == 0)
+				if (double.IsNaN(sign))
 				{
 					sign = crossProd;
 				}
