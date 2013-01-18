@@ -32,7 +32,8 @@ namespace WorldGen.WorldGenerator
 				{
 					landNeighbourCount++;
 
-					if (landNeighbourCount > becomesLandMark) //Surrounded by land for more than the marked value; make myself land.
+					//Surrounded by land for more than the marked value; make myself land.
+					if (landNeighbourCount > becomesLandMark)
 					{
 						cell.LandType = CellLandType.Land;
 						break;
@@ -94,15 +95,18 @@ namespace WorldGen.WorldGenerator
 				return;
 			}
 
-			if (gc.Cell.EdgeType != CellEdgeType.NoEdge) //Cell on the edge of the map is always ocean
+			//Cell on the edge of the map is always ocean
+			if (gc.Cell.EdgeType != CellEdgeType.NoEdge)
 			{
 				gc.Cell.LandType = CellLandType.Ocean;
 			}
-			else if (random.NextDouble() > resetAsLandMinimum) //Not a cell on the edge of the map and land 'threshold' reached.
+			//Not a cell on the edge of the map and land 'threshold' reached.
+			else if (random.NextDouble() > resetAsLandMinimum)
 			{
 				gc.Cell.LandType = CellLandType.Land;
 			}
-			else //Everything else is water
+			//Everything else is water
+			else
 			{
 				gc.Cell.LandType = CellLandType.Water;
 			}
@@ -131,8 +135,6 @@ namespace WorldGen.WorldGenerator
 			for (int i = 0; i < gc.Count; i++)
 			{
 				GroupedCell child = gc[i];
-
-				//reset(child);
 
 				if (child.Cell.LandType == CellLandType.Water)
 				{

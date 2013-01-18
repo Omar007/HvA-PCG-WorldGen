@@ -44,6 +44,7 @@ namespace WorldGen.WorldGenerator
 				{
 					if (otherCell.LandType == CellLandType.Ocean)
 					{
+						//Set height, clamped to maxDeviation
 						cell.ElevationLevel = (float)Math.Round(random.NextDouble() * maxDeviation);
 
 						return;
@@ -62,10 +63,12 @@ namespace WorldGen.WorldGenerator
 
 			float deviation = Math.Abs(cell.ElevationLevel - lowestNeighbour);
 
-			if (deviation < maxDeviation)
+			//We can only increase height if we won't cross the maxDeviation
+			if (deviation <= maxDeviation)
 			{
 				cell.ElevationLevel += (float)Math.Round(random.NextDouble() * (maxDeviation - deviation));
 
+				//Clamp to the maxHeight if we exceeded it
 				if (cell.ElevationLevel > maxHeight)
 				{
 					cell.ElevationLevel = maxHeight;

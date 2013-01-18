@@ -116,7 +116,7 @@ namespace WorldGen
 			spriteBatch.Begin();
 
 			spriteBatch.Draw(texture, Vector2.Zero, Color.White);
-			//spriteBatch.Draw(moistureOverlayTexture, Vector2.Zero, Color.White);
+			spriteBatch.Draw(moistureOverlayTexture, Vector2.Zero, Color.White);
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{

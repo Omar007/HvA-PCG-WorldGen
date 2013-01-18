@@ -51,6 +51,13 @@ namespace WorldGen.Voronoi
 			return new Vector2((float) x, (float) y);
 		}
 
+		public Vector2 ToVector2Normalized()
+		{
+			Vector2 normalizedVector = new Vector2((float)x, (float)y);
+			normalizedVector.Normalize();
+			return normalizedVector;
+		}
+
 		public int CompareTo(Vertex other)
 		{
 			double r = other.Y - Y;
