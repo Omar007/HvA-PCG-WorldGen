@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using WorldGen.Voronoi;
 
@@ -8,6 +9,8 @@ namespace WorldGen.WorldGenerator
 	public class MoistureGenerator
 	{
 		private Vertex windDirection;
+
+		private HashSet<Cell> cellBuffer;
 
 		#region Properties
 		public Vertex WindDirection
@@ -19,6 +22,8 @@ namespace WorldGen.WorldGenerator
 		public MoistureGenerator(Vertex windDirection)
 		{
 			this.windDirection = windDirection;
+
+			cellBuffer = new HashSet<Cell>();
 		}
 
 		public MoistureGenerator(double windDirX, double windDirY)
@@ -28,32 +33,36 @@ namespace WorldGen.WorldGenerator
 
 		private void calcMoisture(Cell cell)
 		{
+			cellBuffer.Add(cell);
+
 			foreach (HalfEdge hEdge in cell.HalfEdges)
 			{
 				Cell otherCell = hEdge.NeighbourCell;
 				
-				if (otherCell != null && otherCell.LandType == CellLandType.Land)
+				if (otherCell != null && otherCell.LandType == CellLandType.Land && !cellBuffer.Contains(otherCell))
 				{
+					cellBuffer.Add(otherCell);
+
 					Vertex direction = otherCell.Vertex - cell.Vertex;
 					double dotProd = Vector2.Dot(direction.ToVector2Normalized(), windDirection.ToVector2Normalized());
 
 					float angle = MathHelper.ToDegrees((float)Math.Acos(dotProd));
 
-					//if (dotProd > 0)
-					if (angle < 67.5)
-					{
-						if (otherCell.MoistureLevel < 0)
-						{
-							double moistureLevelAdapted = cell.MoistureLevel;
-							//If the angle differs more from the windDirection, less moisture is reaching the otherCell.
-							//A maximum of 12.5% will be subtracted.
-							moistureLevelAdapted *= 1 - (angle / 720);
-							//If the cells are further away, less moisture reaches the otherCell.
-							moistureLevelAdapted -= direction.ToVector2().LengthSquared();
-							//If we are going down, some moisture is added back else some more is subtracted
-							moistureLevelAdapted += (cell.ElevationLevel - otherCell.ElevationLevel) * 10;
+					double moistureLevelAdapted = cell.MoistureLevel;
+					//If the angle differs more from the windDirection, less moisture is reaching the otherCell.
+					moistureLevelAdapted *= 1 - (angle / 360);
+					//If the cells are further away, less moisture reaches the otherCell.
+					moistureLevelAdapted -= (direction - windDirection).ToVector2().LengthSquared() * 30;
+					//If we are going down, some moisture is added back else some more is subtracted
+					moistureLevelAdapted += (cell.ElevationLevel - otherCell.ElevationLevel) * 10;
+					moistureLevelAdapted = Math.Max(0, Math.Round(moistureLevelAdapted));
 
-							otherCell.MoistureLevel = (short)Math.Max(0, (int)Math.Round(moistureLevelAdapted));
+					//if (dotProd > 0)
+					//if (angle <= 67.5)
+					{
+						if (otherCell.MoistureLevel < 0 || otherCell.MoistureLevel < moistureLevelAdapted)
+						{
+							otherCell.MoistureLevel = (short)moistureLevelAdapted;
 
 							calcMoisture(otherCell);
 						}
@@ -62,8 +71,12 @@ namespace WorldGen.WorldGenerator
 							calcMoisture(otherCell);
 						}
 					}
+
+					cellBuffer.Remove(otherCell);
 				}
 			}
+
+			cellBuffer.Remove(cell);
 		}
 
 		private void reset(Cell cell)
