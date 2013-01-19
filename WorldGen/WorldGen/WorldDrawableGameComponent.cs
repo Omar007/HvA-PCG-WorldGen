@@ -66,10 +66,10 @@ namespace WorldGen
 		public override void Update(GameTime gameTime)
 		{
 			// TODO: Add your update code here
-			if (Keyboard.GetState().IsKeyDown(Keys.F2) && lastState.IsKeyUp(Keys.F2))
-			{
-				generate();
-			}
+			//if (Keyboard.GetState().IsKeyDown(Keys.F2) && lastState.IsKeyUp(Keys.F2))
+			//{
+			//	generate();
+			//}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.F3) && lastState.IsKeyUp(Keys.F3))
 			{
@@ -116,9 +116,12 @@ namespace WorldGen
 
 			spriteBatch.Begin();
 
-			spriteBatch.Draw(texture, Vector2.Zero, Color.White);
+			if (Keyboard.GetState().IsKeyUp(Keys.M))
+			{
+				spriteBatch.Draw(texture, Vector2.Zero, Color.White);
+			}
 
-			if (moistureOverlayTexture != null)
+			if (moistureOverlayTexture != null && Keyboard.GetState().IsKeyDown(Keys.M))
 			{
 				spriteBatch.Draw(moistureOverlayTexture, Vector2.Zero, Color.White);
 			}
@@ -174,8 +177,11 @@ namespace WorldGen
 			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 100), Color.Brown);
 
 			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 140), Color.Brown);
+			Vector2 windDirVector = wm.WindDirection.ToVector2();
+			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 160), Color.Brown);
 			Vector2 start = new Vector2(100, 150);
-			Vector2 end = wm.WindDirection.ToVector2Normalized() * 25;
+			windDirVector.Normalize();
+			Vector2 end = windDirVector * 25;
 			HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, start, start + end);
 
 			spriteBatch.End();
@@ -229,7 +235,7 @@ namespace WorldGen
 				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
 			}
 
-			clear();
+			moistureOverlayTexture = null;
 			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
 
 			wm.generateMoisture();
@@ -237,7 +243,7 @@ namespace WorldGen
 			createMoistureOverlayTexture();
 		}
 
-		private void generate()
+		public void generate()
 		{
 			if (texture == null)
 			{

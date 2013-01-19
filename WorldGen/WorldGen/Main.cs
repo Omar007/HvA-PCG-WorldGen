@@ -34,10 +34,7 @@ namespace WorldGen
 
 			HelperFunctions.PrimitivesBatch.Init(GraphicsDevice);
 
-			VoronoiDrawableGameComponent vdgc = new VoronoiDrawableGameComponent(this);
-			Components.Add(vdgc);
-
-			Components.Add(new WorldDrawableGameComponent(this, vdgc.VoronoiManager));
+			Components.Add(new VoronoiDrawableGameComponent(this));
 
 			base.Initialize();
 		}

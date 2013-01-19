@@ -19,6 +19,8 @@ namespace WorldGen
 
 		private int drawIndex = 0;
 
+		private WorldDrawableGameComponent wdgc;
+
 		public VoronoiManager VoronoiManager
 		{
 			get { return vManager; }
@@ -62,16 +64,26 @@ namespace WorldGen
 		{
 			if (Keyboard.GetState().IsKeyDown(Keys.F1) && (lastState.IsKeyUp(Keys.F1) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
 			{
+				if (wdgc != null)
+				{
+					Game.Components.Remove(wdgc);
+					wdgc = null;
+				}
+
 				vManager.generate();
-				((WorldDrawableGameComponent)Game.Components[1]).clear();
 
 				drawIndex = vManager.VoronoiDiagrams.Count - 1;
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.LeftControl) && (lastState.IsKeyUp(Keys.LeftControl) || Keyboard.GetState().IsKeyDown(Keys.LeftAlt)))
 			{
+				if (wdgc != null)
+				{
+					Game.Components.Remove(wdgc);
+					wdgc = null;
+				}
+
 				vManager.relax();
-				((WorldDrawableGameComponent)Game.Components[1]).clear();
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.OemPlus) && lastState.IsKeyUp(Keys.OemPlus))
@@ -82,6 +94,16 @@ namespace WorldGen
 				}
 			}
 
+			if (Keyboard.GetState().IsKeyDown(Keys.F2) && lastState.IsKeyUp(Keys.F2))
+			{
+				if (wdgc == null)
+				{
+					wdgc = new WorldDrawableGameComponent(Game, VoronoiManager);
+					Game.Components.Add(wdgc);
+				}
+				wdgc.generate();
+			}
+
 			lastState = Keyboard.GetState();
 
 			base.Update(gameTime);
@@ -89,6 +111,11 @@ namespace WorldGen
 
 		public override void Draw(GameTime gameTime)
 		{
+			if (wdgc != null)
+			{
+				return;
+			}
+
 			spriteBatch.Begin();
 
 			int delaunyEdgeCount = 0;
