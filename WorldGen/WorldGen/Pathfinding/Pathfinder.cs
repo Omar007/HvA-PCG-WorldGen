@@ -18,6 +18,16 @@ namespace WorldGen.Pathfinding
 			}
 		}
 
+		public void reset()
+		{
+			foreach (PathNode node in cells.Values)
+			{
+				node.GCost = 0;
+				node.FCost = 0;
+				node.Next = null;
+			}
+		}
+
 		public PathNode findPath(Cell startCell, Cell endCell)
 		{
 			if (startCell == null || endCell == null)

@@ -148,6 +148,7 @@ namespace WorldGen
 						}
 						else if (startCell != null && endCell != null)
 						{
+							pathfinder.reset();
 							lastPath = pathfinder.findPath(startCell, endCell);
 							startCell = endCell = null;
 						}
