@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using WorldGen.HelperFunctions;
 using WorldGen.Pathfinding;
 using WorldGen.Voronoi;
@@ -168,6 +169,11 @@ namespace WorldGen
 			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 80), Color.Brown);
 			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 100), Color.Brown);
 
+			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 140), Color.Brown);
+			Vector2 start = new Vector2(100, 150);
+			Vector2 end = wm.WindDirection.ToVector2Normalized() * 25;
+			HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, start, start + end);
+
 			spriteBatch.End();
 
 			base.Draw(gameTime);
@@ -313,6 +319,12 @@ namespace WorldGen
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
+				//Skip water as that is always 100% moisture
+				if (cell.LandType != CellLandType.Land)
+				{
+					continue;
+				}
+
 				System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
 				foreach (HalfEdge he in cell.HalfEdges)
 				{
@@ -323,12 +335,18 @@ namespace WorldGen
 				}
 				gPath.CloseFigure();
 
-				System.Drawing.Color baseColor = System.Drawing.Color.Blue;
-				System.Drawing.Color moistureColor = System.Drawing.Color.LightBlue;
+				System.Drawing.Color baseColor = System.Drawing.Color.FromArgb(16, System.Drawing.Color.Blue);
+				System.Drawing.Color moistureColor = System.Drawing.Color.FromArgb(128, System.Drawing.Color.Blue);
 
-				float moistureRGBValue = (cell.MoistureLevel / float.MaxValue);
+				float moistureRGBValue = Math.Max(0, ((float)cell.MoistureLevel / (float)short.MaxValue));
+				System.Drawing.Color finalColor = baseColor.Lerp(moistureColor, moistureRGBValue);
 
-				graphics.FillRegion(new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(192, baseColor.Lerp(moistureColor, moistureRGBValue))), new System.Drawing.Region(gPath));
+				if (moistureRGBValue == 0)
+				{
+					finalColor = System.Drawing.Color.Transparent;
+				}
+
+				graphics.FillRegion(new System.Drawing.SolidBrush(finalColor), new System.Drawing.Region(gPath));
 			}
 
 			graphics.Dispose();

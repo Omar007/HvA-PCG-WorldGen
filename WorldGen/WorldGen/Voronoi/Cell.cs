@@ -29,7 +29,7 @@ namespace WorldGen.Voronoi
 		private CellEdgeType edgeType;
 		private CellLandType landType;
 		private float elevationLevel;
-		private float moistureLevel;
+		private short moistureLevel;
 		#endregion
 
 		#region Properties
@@ -71,7 +71,7 @@ namespace WorldGen.Voronoi
 			set { elevationLevel = value; }
 		}
 
-		public float MoistureLevel
+		public short MoistureLevel
 		{
 			get { return moistureLevel; }
 			set { moistureLevel = value; }
@@ -92,7 +92,7 @@ namespace WorldGen.Voronoi
 			edgeType = CellEdgeType.NoEdge;
 			landType = CellLandType.Undefined;
 			elevationLevel = float.NaN;
-			moistureLevel = float.NaN;
+			moistureLevel = short.MinValue;
 		}
 
 		public int prepare()

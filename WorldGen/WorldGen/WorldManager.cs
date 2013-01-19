@@ -22,6 +22,8 @@ namespace WorldGen
 
 		private TimeSpan moistureComputeTime;
 		private MoistureGenerator moistureGenerator;
+
+		private Random random;
 		#endregion
 
 		#region Properties
@@ -59,11 +61,18 @@ namespace WorldGen
 		{
 			get { return elevationGenerator.MaxHeight; }
 		}
+
+		public Vertex WindDirection
+		{
+			get { return moistureGenerator.WindDirection; }
+		}
 		#endregion
 
 		public WorldManager(List<VoronoiCore> voronoiDiagrams)
 		{
 			this.voronoiDiagrams = voronoiDiagrams;
+
+			random = new Random();
 
 			Stopwatch sw = Stopwatch.StartNew();
 			rootGC = GroupedCell.groupCells(voronoiDiagrams);
@@ -72,7 +81,7 @@ namespace WorldGen
 
 			landGenerator = new LandGenerator();
 			elevationGenerator = new ElevationGenerator(6, 2);
-			moistureGenerator = new MoistureGenerator(new Vertex(-1, 1));
+			moistureGenerator = new MoistureGenerator(new Vertex(10 - random.NextDouble() * 20, 10 - random.NextDouble() * 20));
 		}
 
 		public void generateLand()
@@ -103,7 +112,8 @@ namespace WorldGen
 		public void generateMoisture()
 		{
 			Stopwatch sw = Stopwatch.StartNew();
-			moistureGenerator.generate(DeepestVoronoi);
+			//moistureGenerator.generate(DeepestVoronoi);
+			moistureGenerator.generate(DeepestVoronoi, new Vertex(10 - random.NextDouble() * 20, 10 - random.NextDouble() * 20));
 			sw.Stop();
 			moistureComputeTime = sw.Elapsed;
 		}

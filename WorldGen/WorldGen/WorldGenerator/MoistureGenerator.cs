@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
+using System.Linq;
 using WorldGen.Voronoi;
 
 namespace WorldGen.WorldGenerator
@@ -27,13 +28,11 @@ namespace WorldGen.WorldGenerator
 
 		private void calcMoisture(Cell cell)
 		{
-			float highestMoistureNeighbour = cell.MoistureLevel;
-
 			foreach (HalfEdge hEdge in cell.HalfEdges)
 			{
 				Cell otherCell = hEdge.NeighbourCell;
 				
-				if (otherCell != null)
+				if (otherCell != null && otherCell.LandType == CellLandType.Land)
 				{
 					Vertex direction = otherCell.Vertex - cell.Vertex;
 					double dotProd = Vector2.Dot(direction.ToVector2Normalized(), windDirection.ToVector2Normalized());
@@ -41,32 +40,30 @@ namespace WorldGen.WorldGenerator
 					float angle = MathHelper.ToDegrees((float)Math.Acos(dotProd));
 
 					//if (dotProd > 0)
-					if(angle < 45)
+					if (angle < 67.5)
 					{
-						if (!float.IsNaN(otherCell.MoistureLevel) && otherCell.MoistureLevel > highestMoistureNeighbour)
+						if (otherCell.MoistureLevel < 0)
 						{
-							float moistureLevelAdapted = otherCell.MoistureLevel;
+							double moistureLevelAdapted = cell.MoistureLevel;
 							//If the angle differs more from the windDirection, less moisture is reaching the otherCell.
-							moistureLevelAdapted -= (float)Math.Round(dotProd * 1000);
+							//A maximum of 12.5% will be subtracted.
+							moistureLevelAdapted *= 1 - (angle / 720);
 							//If the cells are further away, less moisture reaches the otherCell.
-							moistureLevelAdapted -= (float)Math.Round(direction.ToVector2().LengthSquared() * 1000);
-							
-							if (otherCell.ElevationLevel < cell.ElevationLevel)
-							{
-								//If we are going down, some moisture is added back.
-								moistureLevelAdapted += (float)Math.Round(cell.ElevationLevel - otherCell.ElevationLevel);
-							}
+							moistureLevelAdapted -= direction.ToVector2().LengthSquared();
+							//If we are going down, some moisture is added back else some more is subtracted
+							moistureLevelAdapted += (cell.ElevationLevel - otherCell.ElevationLevel) * 10;
 
-							if (moistureLevelAdapted > highestMoistureNeighbour)
-							{
-								highestMoistureNeighbour = moistureLevelAdapted;
-							}
+							otherCell.MoistureLevel = (short)Math.Max(0, (int)Math.Round(moistureLevelAdapted));
+
+							calcMoisture(otherCell);
+						}
+						else if (otherCell.MoistureLevel > 0 && otherCell.HalfEdges.Where(he => he.NeighbourCell.MoistureLevel < 0).Count() > 0)
+						{
+							calcMoisture(otherCell);
 						}
 					}
 				}
 			}
-
-			cell.MoistureLevel = highestMoistureNeighbour;
 		}
 
 		private void reset(Cell cell)
@@ -74,15 +71,15 @@ namespace WorldGen.WorldGenerator
 			switch (cell.LandType)
 			{
 				case CellLandType.Land:
-					cell.MoistureLevel = 0;
+					cell.MoistureLevel = short.MinValue;
 					break;
 
 				case CellLandType.Water:
-					cell.MoistureLevel = float.MaxValue;
+					cell.MoistureLevel = short.MaxValue;
 					break;
 
 				case CellLandType.Ocean:
-					cell.MoistureLevel = float.MaxValue;
+					cell.MoistureLevel = short.MaxValue;
 					break;
 			}
 		}
@@ -96,8 +93,18 @@ namespace WorldGen.WorldGenerator
 
 			foreach (Cell cell in vc.Cells)
 			{
-				calcMoisture(cell);
+				if (cell.LandType != CellLandType.Land)
+				{
+					calcMoisture(cell);
+				}
 			}
+		}
+
+		public void generate(VoronoiCore vc, Vertex newWindDir)
+		{
+			windDirection = newWindDir;
+
+			generate(vc);
 		}
 	}
 }
