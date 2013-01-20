@@ -77,6 +77,7 @@
     <Compile Include="GroupedCell.cs" />
     <Compile Include="HelperFunctions\ColorHelpers.cs" />
     <Compile Include="HelperFunctions\PrimitivesBatch.cs" />
+    <Compile Include="Pathfinding\Heap.cs" />
     <Compile Include="Pathfinding\Pathfinder.cs" />
     <Compile Include="Pathfinding\PathNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Voronoi\VoronoiCore.cs" />
     <Compile Include="WorldDrawableGameComponent.cs" />
     <Compile Include="WorldGenerator\BiomeMapper.cs" />
+    <Compile Include="WorldGenerator\CityGenerator.cs" />
     <Compile Include="WorldGenerator\ElevationGenerator.cs" />
     <Compile Include="WorldGenerator\LandGenerator.cs" />
     <Compile Include="WorldGenerator\MoistureGenerator.cs" />

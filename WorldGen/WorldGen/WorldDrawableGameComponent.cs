@@ -22,6 +22,7 @@ namespace WorldGen
 		private Texture2D texture;
 		private Texture2D moistureTexture;
 		private Texture2D biomeTexture;
+		private Texture2D cityTexture;
 
 		private VoronoiManager voronoiManager;
 		private WorldManager wm;
@@ -40,6 +41,8 @@ namespace WorldGen
 			: base(game)
 		{
 			this.voronoiManager = voronoiManager;
+
+			pathfinder = new Pathfinder();
 		}
 
 		/// <summary>
@@ -93,6 +96,11 @@ namespace WorldGen
 				mapBiomes();
 			}
 
+			if (Keyboard.GetState().IsKeyDown(Keys.F7) && lastState.IsKeyUp(Keys.F7))
+			{
+				generateCities();
+			}
+
 			if (Keyboard.GetState().IsKeyDown(Keys.C) && lastState.IsKeyUp(Keys.C))
 			{
 				clear();
@@ -104,8 +112,6 @@ namespace WorldGen
 				{
 					drawIndex = (drawIndex + 1) % wm.VoronoiDiagrams.Count;
 					createTexture();
-
-					pathfinder = new Pathfinder(wm.VoronoiDiagrams[drawIndex].Cells);
 				}
 			}
 
@@ -126,6 +132,11 @@ namespace WorldGen
 			if (Keyboard.GetState().IsKeyDown(Keys.L) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B)))
 			{
 				spriteBatch.Draw(texture, Vector2.Zero, Color.White);
+			}
+
+			if (cityTexture != null && (Keyboard.GetState().IsKeyDown(Keys.R) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B) && Keyboard.GetState().IsKeyUp(Keys.L))))
+			{
+				spriteBatch.Draw(cityTexture, Vector2.Zero, Color.White);
 			}
 
 			if (biomeTexture != null && Keyboard.GetState().IsKeyDown(Keys.B))
@@ -160,7 +171,6 @@ namespace WorldGen
 						}
 						else if (startCell != null && endCell != null)
 						{
-							pathfinder.reset();
 							lastPath = pathfinder.findPath(startCell, endCell);
 							startCell = endCell = null;
 						}
@@ -186,14 +196,15 @@ namespace WorldGen
 			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 40), Color.Brown);
 			spriteBatch.DrawString(sFont, wm.MoistureComputeTime.ToString(), new Vector2(0, 60), Color.Brown);
 			spriteBatch.DrawString(sFont, wm.BiomeComputeTime.ToString(), new Vector2(0, 80), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.CityComputeTime.ToString(), new Vector2(0, 100), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 100), Color.Brown);
-			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 120), Color.Brown);
+			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 120), Color.Brown);
+			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 140), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 160), Color.Brown);
+			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 180), Color.Brown);
 			Vector2 windDirVector = wm.WindDirection.ToVector2();
-			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 180), Color.Brown);
-			Vector2 start = new Vector2(100, 170);
+			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 200), Color.Brown);
+			Vector2 start = new Vector2(100, 190);
 			windDirVector.Normalize();
 			Vector2 end = windDirVector * 25;
 			HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, start, start + end);
@@ -211,6 +222,7 @@ namespace WorldGen
 			texture = null;
 			moistureTexture = null;
 			biomeTexture = null;
+			cityTexture = null;
 		}
 
 		private void generateLand()
@@ -285,6 +297,27 @@ namespace WorldGen
 			createBiomeTexture();
 		}
 
+		private void generateCities()
+		{
+			if (texture == null)
+			{
+				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+
+				//We need land, moisture, elevation and biomes to generate cities.
+				generateLand();
+				generateElevation();
+				generateMoisture();
+				//mapBiomes();
+			}
+
+			cityTexture = null;
+			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
+
+			wm.generateCities();
+
+			createCityTexture();
+		}
+
 		public void generate()
 		{
 			if (texture == null)
@@ -300,8 +333,7 @@ namespace WorldGen
 			createTexture();
 			createMoistureTexture();
 			createBiomeTexture();
-
-			pathfinder = new Pathfinder(wm.VoronoiDiagrams[drawIndex].Cells);
+			createCityTexture();
 		}
 
 		private void createTexture()
@@ -455,6 +487,59 @@ namespace WorldGen
 				bitmap.Save(s, System.Drawing.Imaging.ImageFormat.Png);
 				s.Seek(0, System.IO.SeekOrigin.Begin);
 				biomeTexture = Texture2D.FromStream(GraphicsDevice, s);
+			}
+		}
+
+		private void createCityTexture()
+		{
+			if (drawIndex != voronoiManager.VoronoiDiagrams.Count - 1)
+			{
+				return;
+			}
+
+			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
+			graphics.Clear(System.Drawing.Color.Transparent);
+
+			System.Drawing.SolidBrush cityBrush = new System.Drawing.SolidBrush(City.Color);
+
+			foreach (City city in wm.Cities)
+			{
+				foreach (Cell cell in city.Cells)
+				{
+					System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
+					foreach (HalfEdge he in cell.HalfEdges)
+					{
+						Vertex sp = he.StartPoint;
+						Vertex ep = he.EndPoint;
+
+						gPath.AddLine((float)sp.X, (float)sp.Y, (float)ep.X, (float)ep.Y);
+					}
+					gPath.CloseFigure();
+
+					graphics.FillRegion(cityBrush, new System.Drawing.Region(gPath));
+				}
+
+				foreach (PathNode route in city.RoutesToCities.Values)
+				{
+					PathNode path = route;
+
+					while (path.Next != null)
+					{
+						graphics.DrawLine(System.Drawing.Pens.White, (float)path.Cell.Vertex.X, (float)path.Cell.Vertex.Y, (float)path.Next.Cell.Vertex.X, (float)path.Next.Cell.Vertex.Y);
+						path = path.Next;
+					}
+				}
+			}
+
+			graphics.Dispose();
+
+			//Convert Bitmap to XNA texture
+			using (System.IO.MemoryStream s = new System.IO.MemoryStream())
+			{
+				bitmap.Save(s, System.Drawing.Imaging.ImageFormat.Png);
+				s.Seek(0, System.IO.SeekOrigin.Begin);
+				cityTexture = Texture2D.FromStream(GraphicsDevice, s);
 			}
 		}
 	}

@@ -9,6 +9,9 @@ namespace WorldGen.Pathfinding
 		private double gCost;
 		private double fCost;
 		private PathNode next;
+
+		//Used by the heap.
+		private PathNode nextListNode;
 		#endregion
 
 		#region Properties
@@ -20,19 +23,22 @@ namespace WorldGen.Pathfinding
 		public double GCost
 		{
 			get { return gCost; }
-			set { gCost = value; }
 		}
 
 		public double FCost
 		{
 			get { return fCost; }
-			set { fCost = value; }
 		}
 
 		public PathNode Next
 		{
 			get { return next; }
-			set { next = value; }
+		}
+
+		internal PathNode NextListNode
+		{
+			get { return nextListNode; }
+			set { nextListNode = value; }
 		}
 		#endregion
 

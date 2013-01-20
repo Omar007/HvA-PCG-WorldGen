@@ -1,89 +1,46 @@
-﻿using Microsoft.Xna.Framework;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using WorldGen.Voronoi;
 
 namespace WorldGen.Pathfinding
 {
 	public class Pathfinder
 	{
-		private Dictionary<Cell, PathNode> cells;
-
-		public Pathfinder(HashSet<Cell> cells)
+		public Pathfinder()
 		{
-			this.cells = new Dictionary<Cell, PathNode>();
-
-			foreach (Cell cell in cells)
-			{
-				this.cells.Add(cell, new PathNode(cell, 0, 0, null));
-			}
-		}
-
-		public void reset()
-		{
-			foreach (PathNode node in cells.Values)
-			{
-				node.GCost = 0;
-				node.FCost = 0;
-				node.Next = null;
-			}
 		}
 
 		public PathNode findPath(Cell startCell, Cell endCell)
 		{
-			if (startCell == null || endCell == null)
+			if (startCell == null || endCell == null || startCell == endCell)
 			{
 				return null;
 			}
 
-			HashSet<PathNode> closedList = new HashSet<PathNode>();
-			SortedList<double, PathNode> openList = new SortedList<double, PathNode>();
+			HashSet<Cell> closedList = new HashSet<Cell>();
+			Heap openList = new Heap();
 
-			PathNode node = cells[startCell];
-			openList.Add(node.FCost, node);
+			openList.add(new PathNode(startCell, 0, getHCost(startCell, endCell), null));
 
-			while (openList.Count > 0)
+			while (openList.HasNext)
 			{
-				node = openList.Values[0];
-				openList.RemoveAt(0);
+				PathNode node = openList.Pop();
 
 				if (node.Cell == endCell)
 				{
 					return node;
 				}
 
-				closedList.Add(node);
+				closedList.Add(node.Cell);
 
 				foreach (HalfEdge hEdge in node.Cell.HalfEdges)
 				{
-					if (hEdge.NeighbourCell == null || hEdge.NeighbourCell.LandType != CellLandType.Land)
+					if (hEdge.NeighbourCell == null || hEdge.NeighbourCell.LandType != CellLandType.Land || closedList.Contains(hEdge.NeighbourCell))
 					{
 						continue;
 					}
 
-					PathNode toNode = cells[hEdge.NeighbourCell];
-
-					if (closedList.Contains(toNode))
-					{
-						continue;
-					}
-
-					double newGCost = node.GCost + getGCost(node.Cell, toNode.Cell);
-					double newFCost = newGCost + getHCost(node.Cell, endCell);
-
-					bool openContainsToNode = openList.ContainsValue(toNode);
-
-					if (!openContainsToNode || (openContainsToNode && newFCost < toNode.FCost))
-					{
-						if (openContainsToNode)
-						{
-							openList.Remove(toNode.FCost);
-						}
-
-						toNode.GCost = newGCost;
-						toNode.FCost = newFCost;
-						toNode.Next = node;
-						openList.Add(toNode.FCost, toNode);
-					}
+					PathNode toNode = new PathNode(hEdge.NeighbourCell, getGCost(node.Cell, hEdge.NeighbourCell), getHCost(hEdge.NeighbourCell, endCell), node);
+					openList.add(toNode);
 				}
 			}
 
@@ -94,22 +51,26 @@ namespace WorldGen.Pathfinding
 		{
 			double gCost = 0;
 
-			//gCost = cell.Vertex.DistanceTo(toCell.Vertex);
-			//gCost += Math.Abs(cell.CellElevationLevel - toCell.CellElevationLevel);
-			gCost = getHCost(cell, toCell);
+			gCost = cell.Vertex.DistanceTo(toCell.Vertex);
+			gCost -= cell.ElevationLevel - toCell.ElevationLevel;
+			
+			//gCost = Vector3.Distance(new Vector3(cell.Vertex.ToVector2(), cell.ElevationLevel), new Vector3(toCell.Vertex.ToVector2(), toCell.ElevationLevel * 0.5f));
 
 			return gCost;
 		}
 
 		private double getHCost(Cell cell, Cell endCell)
 		{
-			double hCost = 0;
+			//double hCost = 0;
 
 			//hCost = cell.Vertex.DistanceTo(endCell.Vertex);
-			//hCost += Math.Abs(cell.CellElevationLevel - endCell.CellElevationLevel);
-			hCost = Vector3.Distance(new Vector3(cell.Vertex.ToVector2(), cell.ElevationLevel), new Vector3(endCell.Vertex.ToVector2(), endCell.ElevationLevel));
+			//hCost -= cell.ElevationLevel - endCell.ElevationLevel;
+			
+			////hCost = Vector3.Distance(new Vector3(cell.Vertex.ToVector2(), cell.ElevationLevel), new Vector3(endCell.Vertex.ToVector2(), endCell.ElevationLevel));
 
-			return hCost;
+			//return hCost;
+
+			return getGCost(cell, endCell);
 		}
 	}
 }

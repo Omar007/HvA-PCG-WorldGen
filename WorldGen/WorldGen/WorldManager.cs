@@ -26,6 +26,9 @@ namespace WorldGen
 
 		private TimeSpan biomeComputeTime;
 		private BiomeMapper biomeMapper;
+
+		private TimeSpan cityComputeTime;
+		private CityGenerator cityGenerator;
 		#endregion
 
 		#region Properties
@@ -64,6 +67,11 @@ namespace WorldGen
 			get { return biomeComputeTime; }
 		}
 
+		public TimeSpan CityComputeTime
+		{
+			get { return cityComputeTime; }
+		}
+
 		public float MaxHeight
 		{
 			get { return elevationGenerator.MaxHeight; }
@@ -77,6 +85,11 @@ namespace WorldGen
 		public List<Biome> Biomes
 		{
 			get { return biomeMapper.Biomes; }
+		}
+
+		public List<City> Cities
+		{
+			get { return cityGenerator.Cities; }
 		}
 		#endregion
 
@@ -95,6 +108,7 @@ namespace WorldGen
 			elevationGenerator = new ElevationGenerator(8, 2);
 			moistureGenerator = new MoistureGenerator(new Vertex(10 - random.NextDouble() * 20, 10 - random.NextDouble() * 20));
 			biomeMapper = new BiomeMapper(this);
+			cityGenerator = new CityGenerator(this);
 		}
 
 		public void generateLand()
@@ -139,12 +153,21 @@ namespace WorldGen
 			biomeComputeTime = sw.Elapsed;
 		}
 
+		public void generateCities()
+		{
+			Stopwatch sw = Stopwatch.StartNew();
+			cityGenerator.generate();
+			sw.Stop();
+			cityComputeTime = sw.Elapsed;
+		}
+
 		public void generate()
 		{
 			generateLand();
 			generateElevation();
 			generateMoisture();
 			mapBiomes();
+			generateCities();
 		}
 	}
 }
