@@ -10,6 +10,7 @@ namespace WorldGen
 	{
 		#region Fields
 		private List<VoronoiCore> voronoiDiagrams;
+		private Random random;
 
 		private TimeSpan groupCellsComputeTime;
 		private GroupedCell rootGC;
@@ -23,7 +24,8 @@ namespace WorldGen
 		private TimeSpan moistureComputeTime;
 		private MoistureGenerator moistureGenerator;
 
-		private Random random;
+		private TimeSpan biomeComputeTime;
+		private BiomeMapper biomeMapper;
 		#endregion
 
 		#region Properties
@@ -57,6 +59,11 @@ namespace WorldGen
 			get { return moistureComputeTime; }
 		}
 
+		public TimeSpan BiomeComputeTime
+		{
+			get { return biomeComputeTime; }
+		}
+
 		public float MaxHeight
 		{
 			get { return elevationGenerator.MaxHeight; }
@@ -65,6 +72,11 @@ namespace WorldGen
 		public Vertex WindDirection
 		{
 			get { return moistureGenerator.WindDirection; }
+		}
+
+		public List<Biome> Biomes
+		{
+			get { return biomeMapper.Biomes; }
 		}
 		#endregion
 
@@ -80,8 +92,9 @@ namespace WorldGen
 			groupCellsComputeTime = sw.Elapsed;
 
 			landGenerator = new LandGenerator();
-			elevationGenerator = new ElevationGenerator(6, 2);
+			elevationGenerator = new ElevationGenerator(8, 2);
 			moistureGenerator = new MoistureGenerator(new Vertex(10 - random.NextDouble() * 20, 10 - random.NextDouble() * 20));
+			biomeMapper = new BiomeMapper(this);
 		}
 
 		public void generateLand()
@@ -118,11 +131,20 @@ namespace WorldGen
 			moistureComputeTime = sw.Elapsed;
 		}
 
+		public void mapBiomes()
+		{
+			Stopwatch sw = Stopwatch.StartNew();
+			biomeMapper.assignBiomes(DeepestVoronoi);
+			sw.Stop();
+			biomeComputeTime = sw.Elapsed;
+		}
+
 		public void generate()
 		{
 			generateLand();
 			generateElevation();
 			generateMoisture();
+			mapBiomes();
 		}
 	}
 }

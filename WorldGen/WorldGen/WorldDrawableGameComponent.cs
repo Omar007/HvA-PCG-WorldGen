@@ -5,6 +5,7 @@ using System;
 using WorldGen.HelperFunctions;
 using WorldGen.Pathfinding;
 using WorldGen.Voronoi;
+using WorldGen.WorldGenerator;
 
 namespace WorldGen
 {
@@ -19,7 +20,8 @@ namespace WorldGen
 		private KeyboardState lastState;
 
 		private Texture2D texture;
-		private Texture2D moistureOverlayTexture;
+		private Texture2D moistureTexture;
+		private Texture2D biomeTexture;
 
 		private VoronoiManager voronoiManager;
 		private WorldManager wm;
@@ -86,6 +88,11 @@ namespace WorldGen
 				generateMoisture();
 			}
 
+			if (Keyboard.GetState().IsKeyDown(Keys.F6) && lastState.IsKeyUp(Keys.F6))
+			{
+				mapBiomes();
+			}
+
 			if (Keyboard.GetState().IsKeyDown(Keys.C) && lastState.IsKeyUp(Keys.C))
 			{
 				clear();
@@ -116,14 +123,19 @@ namespace WorldGen
 
 			spriteBatch.Begin();
 
-			if (Keyboard.GetState().IsKeyUp(Keys.M))
+			if (Keyboard.GetState().IsKeyDown(Keys.L) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B)))
 			{
 				spriteBatch.Draw(texture, Vector2.Zero, Color.White);
 			}
 
-			if (moistureOverlayTexture != null && Keyboard.GetState().IsKeyDown(Keys.M))
+			if (biomeTexture != null && Keyboard.GetState().IsKeyDown(Keys.B))
 			{
-				spriteBatch.Draw(moistureOverlayTexture, Vector2.Zero, Color.White);
+				spriteBatch.Draw(biomeTexture, Vector2.Zero, Color.White);
+			}
+
+			if (moistureTexture != null && Keyboard.GetState().IsKeyDown(Keys.M))
+			{
+				spriteBatch.Draw(moistureTexture, Vector2.Zero, Color.White);
 			}
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
@@ -173,14 +185,15 @@ namespace WorldGen
 			spriteBatch.DrawString(sFont, wm.LandComputeTime.ToString(), new Vector2(0, 20), Color.Brown);
 			spriteBatch.DrawString(sFont, wm.ElevationComputeTime.ToString(), new Vector2(0, 40), Color.Brown);
 			spriteBatch.DrawString(sFont, wm.MoistureComputeTime.ToString(), new Vector2(0, 60), Color.Brown);
+			spriteBatch.DrawString(sFont, wm.BiomeComputeTime.ToString(), new Vector2(0, 80), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 80), Color.Brown);
-			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 100), Color.Brown);
+			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 100), Color.Brown);
+			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 120), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 140), Color.Brown);
+			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 160), Color.Brown);
 			Vector2 windDirVector = wm.WindDirection.ToVector2();
-			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 160), Color.Brown);
-			Vector2 start = new Vector2(100, 150);
+			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 180), Color.Brown);
+			Vector2 start = new Vector2(100, 170);
 			windDirVector.Normalize();
 			Vector2 end = windDirVector * 25;
 			HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, start, start + end);
@@ -196,7 +209,8 @@ namespace WorldGen
 			waterCount = 0;
 
 			texture = null;
-			moistureOverlayTexture = null;
+			moistureTexture = null;
+			biomeTexture = null;
 		}
 
 		private void generateLand()
@@ -219,6 +233,9 @@ namespace WorldGen
 			if (texture == null)
 			{
 				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+
+				//We need land to generate elevation.
+				generateLand();
 			}
 
 			clear();
@@ -234,14 +251,38 @@ namespace WorldGen
 			if (texture == null)
 			{
 				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+
+				//We need land and elevation to generate moisture.
+				generateLand();
+				generateElevation();
 			}
 
-			moistureOverlayTexture = null;
+			moistureTexture = null;
 			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
 
 			wm.generateMoisture();
 
-			createMoistureOverlayTexture();
+			createMoistureTexture();
+		}
+
+		private void mapBiomes()
+		{
+			if (texture == null)
+			{
+				wm = new WorldManager(voronoiManager.VoronoiDiagrams);
+
+				//We need land, moisture and elevation to generate biomes.
+				generateLand();
+				generateElevation();
+				generateMoisture();
+			}
+
+			biomeTexture = null;
+			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
+
+			wm.mapBiomes();
+
+			createBiomeTexture();
 		}
 
 		public void generate()
@@ -257,7 +298,8 @@ namespace WorldGen
 			wm.generate();
 
 			createTexture();
-			createMoistureOverlayTexture();
+			createMoistureTexture();
+			createBiomeTexture();
 
 			pathfinder = new Pathfinder(wm.VoronoiDiagrams[drawIndex].Cells);
 		}
@@ -322,8 +364,13 @@ namespace WorldGen
 			}
 		}
 
-		private void createMoistureOverlayTexture()
+		private void createMoistureTexture()
 		{
+			if (drawIndex != voronoiManager.VoronoiDiagrams.Count - 1)
+			{
+				return;
+			}
+
 			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
 			graphics.Clear(System.Drawing.Color.Transparent);
@@ -367,7 +414,47 @@ namespace WorldGen
 			{
 				bitmap.Save(s, System.Drawing.Imaging.ImageFormat.Png);
 				s.Seek(0, System.IO.SeekOrigin.Begin);
-				moistureOverlayTexture = Texture2D.FromStream(GraphicsDevice, s);
+				moistureTexture = Texture2D.FromStream(GraphicsDevice, s);
+			}
+		}
+
+		private void createBiomeTexture()
+		{
+			if (drawIndex != voronoiManager.VoronoiDiagrams.Count - 1)
+			{
+				return;
+			}
+
+			System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+			System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
+			graphics.Clear(System.Drawing.Color.Transparent);
+
+			foreach (Biome biome in wm.Biomes)
+			{
+				foreach (Cell cell in biome.CellsInBiome)
+				{
+					System.Drawing.Drawing2D.GraphicsPath gPath = new System.Drawing.Drawing2D.GraphicsPath();
+					foreach (HalfEdge he in cell.HalfEdges)
+					{
+						Vertex sp = he.StartPoint;
+						Vertex ep = he.EndPoint;
+
+						gPath.AddLine((float)sp.X, (float)sp.Y, (float)ep.X, (float)ep.Y);
+					}
+					gPath.CloseFigure();
+
+					graphics.FillRegion(new System.Drawing.SolidBrush(biome.Color), new System.Drawing.Region(gPath));
+				}
+			}
+
+			graphics.Dispose();
+
+			//Convert Bitmap to XNA texture
+			using (System.IO.MemoryStream s = new System.IO.MemoryStream())
+			{
+				bitmap.Save(s, System.Drawing.Imaging.ImageFormat.Png);
+				s.Seek(0, System.IO.SeekOrigin.Begin);
+				biomeTexture = Texture2D.FromStream(GraphicsDevice, s);
 			}
 		}
 	}

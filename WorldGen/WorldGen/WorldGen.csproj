@@ -95,6 +95,7 @@
     <Compile Include="Voronoi\Vertex.cs" />
     <Compile Include="Voronoi\VoronoiCore.cs" />
     <Compile Include="WorldDrawableGameComponent.cs" />
+    <Compile Include="WorldGenerator\BiomeMapper.cs" />
     <Compile Include="WorldGenerator\ElevationGenerator.cs" />
     <Compile Include="WorldGenerator\LandGenerator.cs" />
     <Compile Include="WorldGenerator\MoistureGenerator.cs" />
