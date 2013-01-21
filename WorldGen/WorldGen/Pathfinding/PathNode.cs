@@ -7,6 +7,7 @@ namespace WorldGen.Pathfinding
 		#region Fields
 		private Cell cell;
 		private double gCost;
+		private double hCost;
 		private double fCost;
 		private PathNode next;
 
@@ -23,6 +24,11 @@ namespace WorldGen.Pathfinding
 		public double GCost
 		{
 			get { return gCost; }
+		}
+
+		public double HCost
+		{
+			get { return hCost; }
 		}
 
 		public double FCost
@@ -46,7 +52,8 @@ namespace WorldGen.Pathfinding
 		{
 			this.cell = cell;
 			this.gCost = (next != null ? next.gCost + gCost : gCost);
-			this.fCost = this.gCost + hCost;
+			this.hCost = hCost;
+			this.fCost = this.gCost + this.hCost;
 			this.next = next;
 		}
 	}

@@ -19,7 +19,7 @@ namespace WorldGen
 			graphics.PreferredBackBufferWidth = 1280;
 			graphics.PreferredBackBufferHeight = 720;
 
-			IsMouseVisible = true;
+			IsMouseVisible = false;
 		}
 
 		/// <summary>

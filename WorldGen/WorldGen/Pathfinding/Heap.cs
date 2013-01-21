@@ -3,19 +3,32 @@ namespace WorldGen.Pathfinding
 {
 	public class Heap
 	{
+		#region Fields
+		private uint routeCount;
 		private PathNode headNode;
+		#endregion
+
+		#region Properties
+		public uint RouteCount
+		{
+			get { return routeCount; }
+		}
 
 		public bool HasNext
 		{
 			get { return headNode != null; }
 		}
+		#endregion
 
 		public Heap()
 		{
+			routeCount = 0;
 		}
 
 		public void add(PathNode node)
 		{
+			routeCount++;
+
 			if (headNode == null)
 			{
 				headNode = node;
@@ -39,9 +52,11 @@ namespace WorldGen.Pathfinding
 
 		public PathNode Pop()
 		{
+			routeCount--;
+
 			PathNode first = headNode;
-			headNode = headNode.Next;
-			//first.NextListNode = null;
+			headNode = headNode.NextListNode;
+			first.NextListNode = null;
 			return first;
 		}
 	}

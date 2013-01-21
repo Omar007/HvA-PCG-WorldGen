@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using WorldGen.Voronoi;
 
 namespace WorldGen
@@ -33,6 +34,7 @@ namespace WorldGen
 					ungroupedCells[index].RemoveAt(i);
 
 					GroupedCell child = new GroupedCell(cell);
+					cell.GroupedCellInfo = child;
 					gc.AddChild(child);
 
 					if (index + 1 < ungroupedCells.Count)

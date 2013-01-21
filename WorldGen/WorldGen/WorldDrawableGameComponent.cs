@@ -18,6 +18,7 @@ namespace WorldGen
 		private SpriteFont sFont;
 
 		private KeyboardState lastState;
+		private MouseState lastMouseState;
 
 		private Texture2D texture;
 		private Texture2D moistureTexture;
@@ -116,6 +117,7 @@ namespace WorldGen
 			}
 
 			lastState = Keyboard.GetState();
+			lastMouseState = Mouse.GetState();
 
 			base.Update(gameTime);
 		}
@@ -129,38 +131,61 @@ namespace WorldGen
 
 			spriteBatch.Begin();
 
-			if (Keyboard.GetState().IsKeyDown(Keys.L) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B)))
+			if (drawIndex != wm.VoronoiDiagrams.Count - 1 || (Keyboard.GetState().IsKeyDown(Keys.L) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B))))
 			{
 				spriteBatch.Draw(texture, Vector2.Zero, Color.White);
 			}
 
-			if (cityTexture != null && (Keyboard.GetState().IsKeyDown(Keys.R) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B) && Keyboard.GetState().IsKeyUp(Keys.L))))
+			if (drawIndex == wm.VoronoiDiagrams.Count - 1)
 			{
-				spriteBatch.Draw(cityTexture, Vector2.Zero, Color.White);
+				if (biomeTexture != null && Keyboard.GetState().IsKeyDown(Keys.B))
+				{
+					spriteBatch.Draw(biomeTexture, Vector2.Zero, Color.White);
+				}
+
+				if (moistureTexture != null && Keyboard.GetState().IsKeyDown(Keys.M))
+				{
+					spriteBatch.Draw(moistureTexture, Vector2.Zero, Color.White);
+				}
+
+				if (cityTexture != null && (Keyboard.GetState().IsKeyDown(Keys.R) || (Keyboard.GetState().IsKeyUp(Keys.M) && Keyboard.GetState().IsKeyUp(Keys.B) && Keyboard.GetState().IsKeyUp(Keys.L))))
+				{
+					spriteBatch.Draw(cityTexture, Vector2.Zero, Color.White);
+				}
 			}
 
-			if (biomeTexture != null && Keyboard.GetState().IsKeyDown(Keys.B))
+			if (startCell != null)
 			{
-				spriteBatch.Draw(biomeTexture, Vector2.Zero, Color.White);
+				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, startCell.Vertex.ToVector2(), 3);
+				spriteBatch.DrawString(sFont, startCell.ElevationLevel.ToString(), startCell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
+				spriteBatch.DrawString(sFont, startCell.MoistureLevel.ToString(), startCell.Vertex.ToVector2() - new Vector2(15, 20), Color.Black);
 			}
 
-			if (moistureTexture != null && Keyboard.GetState().IsKeyDown(Keys.M))
+			if (endCell != null)
 			{
-				spriteBatch.Draw(moistureTexture, Vector2.Zero, Color.White);
+				HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, endCell.Vertex.ToVector2(), 3);
+				spriteBatch.DrawString(sFont, endCell.ElevationLevel.ToString(), endCell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
+				spriteBatch.DrawString(sFont, endCell.MoistureLevel.ToString(), endCell.Vertex.ToVector2() - new Vector2(15, 20), Color.Black);
 			}
 
 			foreach (Cell cell in wm.VoronoiDiagrams[drawIndex].Cells)
 			{
-				bool cellContainsMouse = cell.ContainsVertex(new Vertex(Mouse.GetState().X, Mouse.GetState().Y));
-
-				if (cellContainsMouse || cell == startCell || cell == endCell)
+				if (cell.ContainsVertex(new Vertex(Mouse.GetState().X, Mouse.GetState().Y)))
 				{
 					HelperFunctions.PrimitivesBatch.DrawPoint(spriteBatch, Color.Yellow, cell.Vertex.ToVector2(), 3);
 					spriteBatch.DrawString(sFont, cell.ElevationLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 0), Color.Black);
 					spriteBatch.DrawString(sFont, cell.MoistureLevel.ToString(), cell.Vertex.ToVector2() - new Vector2(15, 20), Color.Black);
 
-					if (cellContainsMouse && Mouse.GetState().LeftButton == ButtonState.Pressed)
+					if (cell.LandType == CellLandType.Land
+						&& (Mouse.GetState().LeftButton == ButtonState.Pressed
+						&& lastMouseState.LeftButton == ButtonState.Released))
 					{
+						if (lastPath != null)
+						{
+							lastPath = null;
+							startCell = endCell = null;
+						}
+
 						if (startCell == null)
 						{
 							startCell = cell;
@@ -172,7 +197,11 @@ namespace WorldGen
 						else if (startCell != null && endCell != null)
 						{
 							lastPath = pathfinder.findPath(startCell, endCell);
-							startCell = endCell = null;
+
+							if (lastPath == null)
+							{
+								startCell = endCell = null;
+							}
 						}
 					}
 				}
@@ -201,12 +230,12 @@ namespace WorldGen
 			spriteBatch.DrawString(sFont, "Water Cells: " + waterCount.ToString(), new Vector2(0, 120), Color.Brown);
 			spriteBatch.DrawString(sFont, "Land Cells: " + landCount.ToString(), new Vector2(0, 140), Color.Brown);
 
-			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 180), Color.Brown);
+			spriteBatch.DrawString(sFont, "Wind Dir: ", new Vector2(0, 160), Color.Brown);
 			Vector2 windDirVector = wm.WindDirection.ToVector2();
-			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 200), Color.Brown);
-			Vector2 start = new Vector2(100, 190);
+			spriteBatch.DrawString(sFont, windDirVector.LengthSquared().ToString(), new Vector2(0, 180), Color.Brown);
+			Vector2 start = new Vector2(100, 180);
 			windDirVector.Normalize();
-			Vector2 end = windDirVector * 25;
+			Vector2 end = windDirVector * 20;
 			HelperFunctions.PrimitivesBatch.DrawLine(spriteBatch, Color.White, start, start + end);
 
 			spriteBatch.End();
@@ -270,6 +299,9 @@ namespace WorldGen
 			}
 
 			moistureTexture = null;
+			biomeTexture = null;
+			cityTexture = null;
+
 			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
 
 			wm.generateMoisture();
@@ -290,6 +322,8 @@ namespace WorldGen
 			}
 
 			biomeTexture = null;
+			//cityTexture = null;
+
 			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
 
 			wm.mapBiomes();
@@ -311,6 +345,7 @@ namespace WorldGen
 			}
 
 			cityTexture = null;
+
 			drawIndex = voronoiManager.VoronoiDiagrams.Count - 1;
 
 			wm.generateCities();
@@ -382,7 +417,17 @@ namespace WorldGen
 						break;
 				}
 
+				if (float.IsNaN(terrainRGBValue))
+				{
+					terrainRGBValue = 0;
+				}
+
 				graphics.FillRegion(new System.Drawing.SolidBrush(baseColor.Lerp(terrainColor, terrainRGBValue)), new System.Drawing.Region(gPath));
+
+				if (drawIndex != wm.VoronoiDiagrams.Count - 1)
+				{
+					graphics.DrawPath(System.Drawing.Pens.Black, gPath);
+				}
 			}
 
 			graphics.Dispose();
@@ -519,7 +564,11 @@ namespace WorldGen
 
 					graphics.FillRegion(cityBrush, new System.Drawing.Region(gPath));
 				}
+			}
 
+			//Seperate loop to draw roads always on top of every city!
+			foreach (City city in wm.Cities)
+			{
 				foreach (PathNode route in city.RoutesToCities.Values)
 				{
 					PathNode path = route;

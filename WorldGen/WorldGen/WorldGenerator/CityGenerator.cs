@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using WorldGen.Pathfinding;
@@ -65,22 +65,38 @@ namespace WorldGen.WorldGenerator
 
 		private List<Cell> checkCityPossible(Cell cell)
 		{
-			List<Cell> cells = null;
-
 			if (cell.ElevationLevel >= 0
 				&& cell.ElevationLevel <= wm.MaxHeight * 0.5f
 				&& cell.MoistureLevel >= short.MaxValue / 3.0f
 				&& cell.MoistureLevel <= short.MaxValue)
 			{
-				cells = new List<Cell>();
+				List<Cell> cells = new List<Cell>();
 
 				cells.Add(cell);
-				checkNeighboursForCity(cell, cells);
-			}
 
-			if (cells != null && cells.Count > 0)
-			{
-				return cells;
+				int lastIndex = 0;
+				int curCount = 0;
+
+				while (true)
+				{
+					lastIndex = curCount;
+					curCount = cells.Count;
+
+					if (lastIndex == curCount)
+					{
+						return cells;
+					}
+
+					for (int i = lastIndex; i < curCount; i++)
+					{
+						checkNeighboursForCity(cells[i], cells);
+
+						if (cells.Count == 0 || cells.Count >= 15)
+						{
+							return cells;
+						}
+					}
+				}
 			}
 
 			return null;
@@ -88,18 +104,13 @@ namespace WorldGen.WorldGenerator
 
 		private void checkNeighboursForCity(Cell cell, List<Cell> cells)
 		{
-			if (cells == null || cells.Count > 15)
-			{
-				return;
-			}
-
 			foreach (HalfEdge hEdge in cell.HalfEdges)
 			{
 				Cell otherCell = hEdge.NeighbourCell;
 
 				if (otherCell != null && otherCell.LandType == CellLandType.Land)
 				{
-					if (cities.Where(c => c.Cells.Contains(cell)).Count() == 0)
+					if (cities.Where(c => c.Cells.Contains(otherCell)).Count() == 0)
 					{
 						if (otherCell.ElevationLevel >= 0
 							&& otherCell.ElevationLevel <= wm.MaxHeight * 0.5f
@@ -108,13 +119,12 @@ namespace WorldGen.WorldGenerator
 							&& Math.Abs(otherCell.ElevationLevel - cell.ElevationLevel) <= 1)
 						{
 							cells.Add(otherCell);
-							checkNeighboursForCity(otherCell, cells);
 						}
 					}
 					else
 					{
 						//Touching other city; abort!
-						cells = null;
+						cells.Clear();
 						return;
 					}
 				}
@@ -125,7 +135,7 @@ namespace WorldGen.WorldGenerator
 		{
 			cities.Clear();
 
-			int counter = 0;
+			byte counter = 0;
 
 			foreach (Cell cell in wm.DeepestVoronoi.Cells)
 			{
@@ -135,12 +145,11 @@ namespace WorldGen.WorldGenerator
 
 					if (cityCells != null && cityCells.Count > 5)
 					{
-						//Only keep every 20th city
-						if (counter % 20 == 0)
+						if (counter == 0)
 						{
 							cities.Add(new City(cell, cityCells));
 						}
-						counter++;
+						counter = (byte)((counter + 1) % 20);
 					}
 				}
 			}
@@ -155,7 +164,7 @@ namespace WorldGen.WorldGenerator
 				for (int j = i + 1; j < cities.Count; j++)
 				{
 					PathNode route = pathfinder.findPath(cities[i].CenterCell, cities[j].CenterCell);
-					
+
 					if (route != null)
 					{
 						PathNode cursor = route;
@@ -165,7 +174,7 @@ namespace WorldGen.WorldGenerator
 							if (cities.Where(c => (
 								(c != cities[i] && c != cities[j]) //Not part of start/end city
 								&& c.Cells.Contains(cursor.Cell) //Part of another city
-								&& (cities[i].RoutesToCities.ContainsKey(c) && cities[j].RoutesToCities.ContainsKey(c)) //We have routes to that city
+								&& (cities[i].RoutesToCities.ContainsKey(c) && (c.RoutesToCities.ContainsKey(cities[j]) || cities[j].RoutesToCities.ContainsKey(c))) //We have routes to that city
 								)).Count() > 0)
 							{
 								return;
@@ -177,6 +186,21 @@ namespace WorldGen.WorldGenerator
 						cities[i].RoutesToCities.Add(cities[j], route);
 						cities[j].RoutesToCities.Add(cities[i], route);
 					}
+				}
+
+				List<KeyValuePair<City, double>> closestCities = new List<KeyValuePair<City, double>>();
+
+				foreach (KeyValuePair<City, PathNode> route in cities[i].RoutesToCities)
+				{
+					closestCities.Add(new KeyValuePair<City, double>(cities[i], route.Value.FCost));
+				}
+
+				closestCities.Sort((kvp, otherKvp) => (int)(kvp.Value - otherKvp.Value));
+
+				for(int j = 3; j < closestCities.Count; j++)
+				{
+					cities[i].RoutesToCities.Remove(closestCities[j].Key);
+					closestCities[j].Key.RoutesToCities.Remove(cities[i]);
 				}
 			}
 		}

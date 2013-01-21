@@ -30,6 +30,8 @@ namespace WorldGen.Voronoi
 		private CellLandType landType;
 		private float elevationLevel;
 		private short moistureLevel;
+
+		private GroupedCell groupedCellInfo;
 		#endregion
 
 		#region Properties
@@ -75,6 +77,12 @@ namespace WorldGen.Voronoi
 		{
 			get { return moistureLevel; }
 			set { moistureLevel = value; }
+		}
+
+		public GroupedCell GroupedCellInfo
+		{
+			get { return groupedCellInfo; }
+			set { groupedCellInfo = value; }
 		}
 		#endregion
 
